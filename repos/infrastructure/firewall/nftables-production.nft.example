@@ -1,0 +1,15 @@
+#!/usr/sbin/nft -f
+# EJEMPLO. NO APLICAR SIN ADAPTAR LA POLÍTICA DE RED INSTITUCIONAL.
+flush ruleset
+table inet filter {
+  chain input {
+    type filter hook input priority 0; policy drop;
+    ct state established,related accept
+    iif lo accept
+    tcp dport { 80, 443 } accept
+    # Restringir SSH a la subred administrativa real:
+    ip saddr 10.10.10.0/24 tcp dport 22 accept
+  }
+  chain forward { type filter hook forward priority 0; policy accept; }
+  chain output { type filter hook output priority 0; policy accept; }
+}

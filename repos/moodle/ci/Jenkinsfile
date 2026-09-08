@@ -1,0 +1,61 @@
+pipeline {
+  agent any
+  options { timestamps(); disableConcurrentBuilds() }
+  parameters {
+    string(name:'TESTED_TAG', defaultValue:'', description:'Sólo main: tag *-tested validado en TEST')
+    booleanParam(name:'MOODLE_UPGRADE', defaultValue:false, description:'Ejecutar admin/cli/upgrade.php tras backup')
+  }
+  environment { REGISTRY='git.infra.encit.unam.mx'; IMAGE="${REGISTRY}/encit/moodle"; MOODLE_VERSION='5.2.2' }
+  stages {
+    stage('Checkout'){steps{checkout scm}}
+    stage('Build'){when{not{branch 'main'}}steps{
+      sh '''docker build --pull --build-arg MOODLE_VERSION="$MOODLE_VERSION" --build-arg MOODLE_SERIES=502 \
+        -f image/Dockerfile -t "$IMAGE:${MOODLE_VERSION}-${GIT_COMMIT}" .'''
+    }}
+    stage('Push'){when{anyOf{branch 'develop';branch pattern:"release/.*",comparator:"REGEXP"}}steps{
+      withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+        sh 'echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin && docker push "$IMAGE:${MOODLE_VERSION}-${GIT_COMMIT}"'
+      }
+    }}
+    stage('DEV'){when{branch 'develop'}steps{sshagent(credentials:['control-deploy-ssh']){
+      sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/moodle/dev &&
+        sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${MOODLE_VERSION}-${GIT_COMMIT}/' .env &&
+        docker compose pull && docker compose up -d --remove-orphans"'''
+    }}}
+    stage('TEST'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
+      sshagent(credentials:['control-deploy-ssh']){
+        sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/moodle/test &&
+          sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${MOODLE_VERSION}-${GIT_COMMIT}/' .env &&
+          docker compose pull && docker compose up -d --remove-orphans"'''
+      }
+      sh 'curl -fsS --retry 10 https://ec.test.encit.unam.mx/login/index.php'
+    }}
+    stage('Mark TESTED'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
+      withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+        sh '''
+          echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin
+          SRC="$IMAGE:${MOODLE_VERSION}-${GIT_COMMIT}"
+          DST="$IMAGE:${MOODLE_VERSION}-${GIT_COMMIT}-tested"
+          docker pull "$SRC"; docker tag "$SRC" "$DST"; docker push "$DST"
+        '''
+      }
+    }}
+    stage('PROD'){when{branch 'main'}steps{
+      sh '''test -n "$TESTED_TAG"; case "$TESTED_TAG" in *-tested) ;; *) exit 2;; esac'''
+      input message:'¿Respaldar y desplegar exactamente Moodle TESTED?'
+      sshagent(credentials:['production-deploy-ssh']){
+        sh '''
+          ssh deploy@10.10.10.30 "
+            set -e; cd /srv/encit/apps/moodle/prod
+            set -a; . ./.env; set +a
+            export BACKUP_DIR=/srv/encit/backups/moodle/prod
+            ./scripts/backup.sh
+            sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env
+            docker compose pull && docker compose up -d --remove-orphans
+            if [ '${MOODLE_UPGRADE}' = 'true' ]; then ./scripts/upgrade.sh; fi
+          "
+        '''
+      }
+    }}
+  }
+}

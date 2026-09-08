@@ -1,0 +1,75 @@
+name: encit-revista-dev
+
+x-ojs-volumes: &ojs-volumes
+  - ${OJS_CONFIG_DIR}/config.inc.php:/var/www/html/config.inc.php
+  - ${OJS_FILES_DIR}:/var/www/ojs-files
+  - ${OJS_PUBLIC_DIR}:/var/www/html/public
+  - ${OJS_CACHE_DIR}:/var/www/html/cache
+
+services:
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      TZ: America/Mexico_City
+    volumes:
+      - ${MARIADB_DATA_DIR}:/var/lib/mysql
+    networks: [ojs_internal]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  web:
+    image: ${REGISTRY}/encit/ojs:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes: *ojs-volumes
+    networks:
+      ojs_internal:
+      encit_control_edge:
+        aliases: [revista-dev-web]
+
+  worker:
+    image: ${REGISTRY}/encit/ojs:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["php", "lib/pkp/tools/jobs.php", "work", "--sleep=3", "--max-time=3600", "--memory=256"]
+    volumes: *ojs-volumes
+    networks:
+      ojs_internal:
+      encit_control_edge:
+
+  scheduler:
+    image: ${REGISTRY}/encit/ojs:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        while true; do
+          php lib/pkp/tools/scheduler.php run || true
+          sleep 60
+        done
+    volumes: *ojs-volumes
+    networks:
+      ojs_internal:
+      encit_control_edge:
+
+networks:
+  ojs_internal:
+    driver: bridge
+  encit_control_edge:
+    external: true

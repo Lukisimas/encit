@@ -1,0 +1,50 @@
+pipeline {
+  agent any
+  options { timestamps(); disableConcurrentBuilds() }
+  parameters {
+    string(name:'TESTED_TAG', defaultValue:'', description:'Sólo main: tested-<sha> generado en release/*')
+  }
+  environment { REGISTRY='git.infra.encit.unam.mx'; IMAGE="${REGISTRY}/encit/cursos" }
+  stages {
+    stage('Checkout'){steps{checkout scm}}
+    stage('Build'){when{not{branch 'main'}}steps{sh 'docker build --pull -t "$IMAGE:${GIT_COMMIT}" .'}}
+    stage('Push'){
+      when{anyOf{branch 'develop';branch pattern:"release/.*",comparator:"REGEXP"}}
+      steps{withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+        sh 'echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin && docker push "$IMAGE:${GIT_COMMIT}"'
+      }}
+    }
+    stage('DEV'){when{branch 'develop'}steps{sshagent(credentials:['control-deploy-ssh']){
+      sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/cursos/dev &&
+        sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env &&
+        docker compose pull && docker compose up -d --remove-orphans"'''
+    }}}
+    stage('TEST'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
+      sshagent(credentials:['control-deploy-ssh']){
+        sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/cursos/test &&
+          sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env &&
+          docker compose pull && docker compose up -d --remove-orphans"'''
+      }
+      sh 'curl -fsS --retry 10 https://cursos.test.encit.unam.mx/'
+    }}
+    stage('Mark TESTED'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
+      withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+        sh '''
+          echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin
+          docker pull "$IMAGE:${GIT_COMMIT}"
+          docker tag "$IMAGE:${GIT_COMMIT}" "$IMAGE:tested-${GIT_COMMIT}"
+          docker push "$IMAGE:tested-${GIT_COMMIT}"
+        '''
+      }
+    }}
+    stage('PROD'){when{branch 'main'}steps{
+      sh '''test -n "$TESTED_TAG"; case "$TESTED_TAG" in tested-*) ;; *) exit 2;; esac'''
+      input message:'¿Desplegar exactamente la imagen TESTED en cursos.encit.unam.mx?'
+      sshagent(credentials:['production-deploy-ssh']){
+        sh '''ssh deploy@10.10.10.30 "cd /srv/encit/apps/cursos/prod &&
+          sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env &&
+          docker compose pull && docker compose up -d --remove-orphans"'''
+      }
+    }}
+  }
+}

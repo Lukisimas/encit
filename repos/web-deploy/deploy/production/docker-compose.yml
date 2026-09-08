@@ -1,0 +1,110 @@
+name: encit-web-prod
+
+services:
+  mysql:
+    image: mysql:8.2.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - ${MYSQL_DATA_DIR}:/var/lib/mysql
+      - ${SQL_INIT_DIR:-/srv/encit/config/web/sql-scripts}:/docker-entrypoint-initdb.d:ro
+    networks: [web_internal]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  redis-app:
+    # No usar :latest. Fijar la versión real después de inventariar el servidor actual.
+    image: ${REDIS_IMAGE:?Defina REDIS_IMAGE tras inventariar la versión actual}
+    restart: unless-stopped
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+    volumes:
+      - /srv/encit/config/web/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ${REDIS_APP_DATA_DIR}:/data
+      - /srv/encit/config/web/users.acl:/data/users.acl:ro
+    networks: [web_internal]
+
+  redis-local:
+    image: ${REDIS_IMAGE:?Defina REDIS_IMAGE tras inventariar la versión actual}
+    restart: unless-stopped
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+    volumes:
+      - /srv/encit/config/web/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - ${REDIS_LOCAL_DATA_DIR}:/data
+      - /srv/encit/config/web/users.acl:/data/users.acl:ro
+    networks: [web_internal]
+
+  backend:
+    image: ${REGISTRY}/encit/web-backend:${BACKEND_TAG}
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis-app:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: redis-app
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      LOGS_PATH: /app/logs
+      MAIL_ADDRESS: ${MAIL_ADDRESS}
+      MAIL_SENDER: ${MAIL_SENDER}
+      FRONT_PATH: ${PUBLIC_BASE_URL}
+      MAIL_KEY: ${MAIL_KEY}
+    volumes:
+      - ${UPLOADS_DIR}:/app/uploads
+      - ${BACKEND_LOGS_DIR}:/app/logs
+    networks:
+      web_internal:
+        aliases: [backend]
+
+  frontend:
+    image: ${REGISTRY}/encit/web-frontend:${FRONTEND_TAG}
+    restart: unless-stopped
+    volumes:
+      - ${UPLOADS_DIR}:/usr/share/nginx/html/uploads:ro
+    networks:
+      web_internal:
+        aliases: [frontend]
+
+  gateway:
+    image: nginx:1.30.4
+    restart: unless-stopped
+    depends_on: [frontend, backend]
+    volumes:
+      - /srv/encit/config/web/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${FILES_HOST_DIR}:/srv/encit-files:ro
+    networks:
+      web_internal:
+      encit_prod_edge:
+        aliases: [web-prod-gateway]
+
+  # Mantener mientras existan otros micrositios heredados. No forma parte del nuevo portal de cursos.
+  micro-sites:
+    profiles: ["legacy-microsites"]
+    image: ${REGISTRY}/encit/micro-sites:${MICROSITES_TAG:-legacy}
+    restart: unless-stopped
+    volumes:
+      - ${SITES_HOST_DIR}:/var/www/sites:ro
+    networks:
+      web_internal:
+        aliases: [micro-sites]
+
+networks:
+  web_internal:
+    internal: true
+  encit_prod_edge:
+    external: true

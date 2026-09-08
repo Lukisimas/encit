@@ -1,0 +1,33 @@
+---
+import '../styles/global.css';
+import '../styles/palettes.css';
+import '../styles/courses.css';
+const {
+  title = 'Educación Continua | ENCiT',
+  description = 'Cursos y diplomados de Educación Continua de la ENCiT, UNAM'
+} = Astro.props;
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width" />
+  <meta name="description" content={description} />
+  <title>{title}</title>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="brand">ENCiT · UNAM <span>Educación Continua</span></a>
+    <nav aria-label="Principal">
+      <a href="/">Inicio</a>
+      <a href="/cursos/">Oferta</a>
+      <a href="/historico/">Histórico</a>
+    </nav>
+  </header>
+  <main><slot /></main>
+  <footer class="site-footer">
+    <p>Escuela Nacional de Ciencias de la Tierra · Universidad Nacional Autónoma de México</p>
+  </footer>
+  <script src="/js/site.js" is:inline></script>
+</body>
+</html>

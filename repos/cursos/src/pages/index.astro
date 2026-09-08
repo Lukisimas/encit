@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CourseSlide from '../components/CourseSlide.astro';
+import CourseCard from '../components/CourseCard.astro';
+import { getPublishedCourses } from '../lib/courses';
+const courses = await getPublishedCourses();
+---
+<BaseLayout>
+  <section class="intro">
+    <p class="eyebrow">Educación Continua</p>
+    <h1>Aprender para comprender y transformar el planeta</h1>
+    <p>Consulta cursos, talleres, seminarios y diplomados de la ENCiT.</p>
+  </section>
+
+  <section class="carousel-section" aria-labelledby="destacados">
+    <h2 id="destacados">Oferta destacada</h2>
+    <div class="carousel" data-carousel>
+      {courses.map((course) => <CourseSlide course={course} />)}
+    </div>
+    <p class="empty-message" data-carousel-empty hidden>No hay actividades en promoción actualmente.</p>
+  </section>
+
+  <section class="catalog-preview" data-current-catalog>
+    <h2>Oferta actual</h2>
+    <div class="cards">
+      {courses.map((course) => <CourseCard course={course} />)}
+    </div>
+  </section>
+</BaseLayout>

@@ -1,0 +1,13 @@
+.palette-tierra { --p:#5a3d2b; --s:#a66a3f; --a:#d6a15c; --light:#f3ece4; --ink:#30251f; }
+.palette-oceano { --p:#163f59; --s:#287a8d; --a:#61b5c2; --light:#eaf4f6; --ink:#17323d; }
+.palette-bosque { --p:#28493b; --s:#507764; --a:#9dbf8b; --light:#eef3ed; --ink:#24352d; }
+.palette-volcan { --p:#552c32; --s:#994950; --a:#d58961; --light:#f4ece9; --ink:#3a282a; }
+.palette-mineral { --p:#41434d; --s:#6e7281; --a:#b6a77a; --light:#f1f1f3; --ink:#30323a; }
+.palette-atmosfera { --p:#315d73; --s:#6f9bad; --a:#c0d9de; --light:#eff6f7; --ink:#28424f; }
+
+.palette-detail-tierra { --p:#5a3d2b; --a:#d6a15c; --light:#f3ece4; --ink:#30251f; }
+.palette-detail-oceano { --p:#163f59; --a:#61b5c2; --light:#eaf4f6; --ink:#17323d; }
+.palette-detail-bosque { --p:#28493b; --a:#9dbf8b; --light:#eef3ed; --ink:#24352d; }
+.palette-detail-volcan { --p:#552c32; --a:#d58961; --light:#f4ece9; --ink:#3a282a; }
+.palette-detail-mineral { --p:#41434d; --a:#b6a77a; --light:#f1f1f3; --ink:#30323a; }
+.palette-detail-atmosfera { --p:#315d73; --a:#c0d9de; --light:#eff6f7; --ink:#28424f; }

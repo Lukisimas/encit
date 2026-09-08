@@ -1,0 +1,33 @@
+<?php
+unset($CFG);
+global $CFG;
+$CFG = new stdClass();
+
+$CFG->dbtype    = 'mariadb';
+$CFG->dblibrary = 'native';
+$CFG->dbhost    = 'db';
+$CFG->dbname    = '__DB_NAME__';
+$CFG->dbuser    = '__DB_USER__';
+$CFG->dbpass    = '__DB_PASS__';
+$CFG->prefix    = 'mdl_';
+$CFG->dboptions = [
+    'dbpersist' => 0,
+    'dbport' => 3306,
+    'dbsocket' => '',
+    'dbcollation' => 'utf8mb4_unicode_ci',
+];
+
+$CFG->wwwroot  = '__WWWROOT__';
+$CFG->dataroot = '/var/www/moodledata';
+$CFG->admin    = 'admin';
+$CFG->directorypermissions = 02770;
+
+// El reverse proxy termina TLS.
+$CFG->sslproxy = true;
+$CFG->reverseproxy = true;
+
+// No mostrar errores a usuarios en producción; controlar mediante log.
+$CFG->debug = 0;
+$CFG->debugdisplay = 0;
+
+require_once(__DIR__ . '/lib/setup.php');

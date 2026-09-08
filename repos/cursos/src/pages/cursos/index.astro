@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CourseCard from '../../components/CourseCard.astro';
+import { getPublishedCourses } from '../../lib/courses';
+const courses = await getPublishedCourses();
+---
+<BaseLayout title="Oferta actual | Educación Continua ENCiT">
+  <section class="page-heading"><h1>Oferta actual</h1><p>Actividades próximas o en curso.</p></section>
+  <div class="cards" data-current-catalog>
+    {courses.map((course) => <CourseCard course={course} />)}
+  </div>
+</BaseLayout>

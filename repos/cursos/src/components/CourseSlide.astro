@@ -1,0 +1,27 @@
+---
+const { course } = Astro.props;
+const d = course.data;
+---
+<article
+  class={`course-slide palette-${d.paleta}`}
+  data-course
+  data-publish-from={d.publicar_desde}
+  data-publish-until={d.publicar_hasta}
+  data-start={d.fecha_inicio}
+  data-end={d.fecha_fin}
+  data-priority={d.prioridad}
+  hidden>
+  <div class="decor decor-a"></div><div class="decor decor-b"></div>
+  <div class="slide-content">
+    <p class="eyebrow">{d.tipo}</p>
+    <h2>{d.titulo}</h2>
+    {d.subtitulo && <p class="subtitle">{d.subtitulo}</p>}
+    <p class="short">{d.descripcion_corta}</p>
+    <div class="facts">
+      <span>{d.fecha_inicio} — {d.fecha_fin}</span>
+      <span>{d.duracion_horas} horas</span>
+      <span>{d.modalidad}</span>
+    </div>
+    <a class="button" href={`/cursos/${d.slug}/`}>Conocer {d.tipo.toLowerCase()}</a>
+  </div>
+</article>

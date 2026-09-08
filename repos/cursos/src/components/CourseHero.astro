@@ -1,0 +1,20 @@
+---
+const { course } = Astro.props;
+const d = course.data;
+---
+<section class={`course-hero palette-${d.paleta}`} data-start={d.fecha_inicio} data-end={d.fecha_fin}>
+  <div class="decor decor-a"></div><div class="decor decor-b"></div>
+  <div class="hero-inner">
+    <p class="eyebrow">{d.tipo}</p>
+    <h1>{d.titulo}</h1>
+    {d.subtitulo && <p class="subtitle">{d.subtitulo}</p>}
+    <div class="facts">
+      <span>{d.fecha_inicio} — {d.fecha_fin}</span>
+      <span>{d.duracion_horas} horas</span>
+      <span>{d.modalidad}</span>
+    </div>
+    <p class="temporal-status" data-temporal-status></p>
+    {d.inscripcion_url &&
+      <a class="button enrollment" data-enrollment href={d.inscripcion_url}>Inscribirme</a>}
+  </div>
+</section>

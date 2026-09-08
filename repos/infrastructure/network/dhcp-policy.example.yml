@@ -1,0 +1,32 @@
+# Política DHCP objetivo. Aplicar SÓLO cuando DGTIC delegue formalmente los ámbitos/VLAN.
+# No activar un segundo DHCP en una VLAN que ya recibe DHCP institucional.
+
+dhcp:
+  authoritative_for_delegated_scopes_only: true
+  dns_servers:
+    - "<IP_DNS_INTERNO_1>"
+    - "<IP_DNS_INTERNO_2_OPCIONAL>"
+  domain_search:
+    - "encit.unam.mx"
+  ntp_servers:
+    - "<NTP_INSTITUCIONAL_SI_APLICA>"
+
+  scopes:
+    - name: "usuarios"
+      vlan: "<VLAN_USUARIOS>"
+      subnet: "<SUBRED_USUARIOS>"
+      gateway: "<GATEWAY_USUARIOS>"
+      pool_start: "<INICIO_POOL>"
+      pool_end: "<FIN_POOL>"
+      exclusions:
+        - "<RANGO_RESERVADO>"
+
+    - name: "administracion"
+      vlan: "<VLAN_ADMIN>"
+      subnet: "<SUBRED_ADMIN>"
+      gateway: "<GATEWAY_ADMIN>"
+      pool_start: "<INICIO_POOL>"
+      pool_end: "<FIN_POOL>"
+
+# La VLAN de servidores debe preferir direcciones estáticas/reservas controladas,
+# no un pool dinámico general para 10.10.10.20/10.10.10.30.

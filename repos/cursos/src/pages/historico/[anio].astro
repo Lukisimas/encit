@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CourseCard from '../../components/CourseCard.astro';
+import { getPublishedCourses } from '../../lib/courses';
+export async function getStaticPaths() {
+  const courses=await getPublishedCourses();
+  const years=[...new Set(courses.map(c=>c.data.fecha_inicio.slice(0,4)))];
+  return years.map(anio=>({params:{anio},props:{anio,courses}}));
+}
+const { anio, courses }=Astro.props;
+---
+<BaseLayout title={`Histórico ${anio} | Educación Continua ENCiT`}>
+  <section class="page-heading"><h1>Actividades de {anio}</h1></section>
+  <div class="cards" data-history-catalog data-history-year={anio}>
+    {courses.map((course) => <CourseCard course={course} />)}
+  </div>
+</BaseLayout>

@@ -1,0 +1,43 @@
+# Política DNS interna ENCiT — vendor-neutral.
+# Implementar como Local DNS Zones / Host Overrides / DNS Database en el equipo perimetral.
+
+zones:
+  - name: "dev.encit.unam.mx"
+    visibility: "internal-only"
+    records:
+      - name: "*"
+        type: "A"
+        value: "10.10.10.20"
+        ttl: 300
+
+  - name: "test.encit.unam.mx"
+    visibility: "internal-only"
+    records:
+      - name: "*"
+        type: "A"
+        value: "10.10.10.20"
+        ttl: 300
+
+  - name: "infra.encit.unam.mx"
+    visibility: "internal-only"
+    records:
+      - name: "*"
+        type: "A"
+        value: "10.10.10.20"
+        ttl: 300
+
+forwarding:
+  mode: "forward-only-for-non-local-zones"
+  upstream:
+    - "132.248.10.2"
+    - "132.248.204.1"
+
+access:
+  recursion: "ENCiT VLANs only"
+  local_zones: "ENCiT VLANs and administrative VPN only"
+  internet: "deny"
+
+# Si el equipo no admite wildcard en zonas locales, crear explícitamente:
+# web.dev, siia.dev, revista.dev, cursos.dev, ec.dev
+# web.test, siia.test, revista.test, cursos.test, ec.test
+# git.infra, jenkins.infra, registry.infra, mail.infra

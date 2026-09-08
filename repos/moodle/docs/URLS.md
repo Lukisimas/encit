@@ -1,0 +1,3 @@
+- DEV: https://ec.dev.encit.unam.mx
+- TEST: https://ec.test.encit.unam.mx
+- PROD: https://ec.encit.unam.mx

@@ -1,0 +1,191 @@
+services:
+  mysql-encit-server:
+    image: mysql:8.2.0
+    container_name: mysql-encit-server
+    ports:
+      - "${MYSQL_PORT}:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - ${MYSQL_VOLUME}:/var/lib/mysql
+      - ${INFRA_DIR}/db/sql-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - app_network
+
+  mysql-backup:
+    build:
+      context: ./mysql-backup
+    container_name: mysql-backup
+    depends_on:
+      - mysql-encit-server
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_PORT: ${MYSQL_PORT}
+      TZ: America/Mexico_City
+    volumes:
+      - ${BACKUPS_DIR}:/backups
+    networks:
+      - app_network
+
+  redis-encit-server:
+    build:
+      context: ./redis
+      dockerfile: Redis.Dockerfile
+    container_name: redis-encit-server
+    image: redis:latest
+    command: >
+      redis-server
+      --bind 0.0.0.0
+      --protected-mode yes
+      --appendonly yes
+      --loglevel notice
+      --logfile /data/redis.log
+      --aclfile /data/users.acl
+      --rename-command REPLICAOF ""
+      --rename-command SLAVEOF ""
+    volumes:
+      - logs-repo:/data
+    networks:
+      - app_network
+
+  redis-local-server:
+    build:
+      context: ./redis
+      dockerfile: Redis.Dockerfile
+    container_name: redis-local-server
+    image: redis:latest
+    command: >
+      redis-server
+      --protected-mode yes
+      --appendonly yes
+      --loglevel notice
+      --logfile /data/redis.log
+      --aclfile /data/users.acl
+      --rename-command REPLICAOF ""
+      --rename-command SLAVEOF ""
+    volumes:
+      - logs-repo:/data
+    networks:
+      - app_network
+    ports:
+      - "6379:6379"
+
+  encit-back-end:
+    build:
+      context: ../../back-end/encit-back-services
+      dockerfile: Dockerfile
+    container_name: encit-back-end
+    depends_on:
+      - mysql-encit-server
+      - redis-encit-server
+    environment:
+      SPRING_DATASOURCE_URL: ${MYSQL_URL}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      SECRET_KEY: ${SECRET_KEY}
+      LOGS_PATH: ${LOGS_PATH}
+      MAIL_ADDRESS: ${MAIL_ADDRESS}
+      MAIL_SENDER: ${MAIL_SENDER}
+      FRONT_PATH: ${FRONT_PATH}
+      MAIL_KEY: ${MAIL_KEY}
+      
+    volumes:
+      - shared-data:/app/uploads
+      - mvn-repo:/root/.m2
+      - logs-repo:${LOGS_PATH}
+    networks:
+      - app_network
+
+  encit-front-end:
+    build:
+      context: ../../front-end
+      dockerfile: encit-web-main/Dockerfile
+    container_name: encit-front-end
+    volumes:
+      - shared-data:/usr/share/nginx/html/uploads
+    networks:
+      - app_network
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL}
+      NODE_ENV: ${NODE_ENV}
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+      - logs-repo:/usr/share/nginx/html/logs:ro
+      - ${FILES_HOST_DIR}:/srv/encit-files:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - encit-back-end
+      - encit-front-end
+      - jenkins-encit-server
+    networks:
+      - app_network
+
+  jenkins-encit-server:
+    build:
+        context: ./jenkins
+        dockerfile: Dockerfile
+    container_name: jenkins-encit-server
+    environment:
+      - JENKINS_OPTS=--prefix=/jenkins
+    volumes:
+      - jenkins-data:/var/jenkins_home
+    networks:
+      - app_network
+
+  jenkins-encit-agent:
+    build:
+      context: ./jenkins
+      dockerfile: Agent.Dockerfile
+    container_name: jenkins-encit-agent
+    environment:
+      - JENKINS_URL=http://jenkins-encit-server:8080/jenkins/
+      - JENKINS_AGENT_NAME=docker-deploy-agent
+      - JENKINS_SECRET=${JENKINS_AGENT_SECRET}
+      - JENKINS_AGENT_WORKDIR=/home/jenkins/agent
+    volumes:
+      - ${DOCKER_SOCKET:-/var/run/docker.sock}:/var/run/docker.sock
+      - jenkins-agent-workdir:/home/jenkins/agent
+      - ${HOST_CONFIG_DIR}:/opt/encit-config:ro
+      - ${SSH_KEYS_HOST_DIR}:/opt/encit-ssh:ro
+      - /opt/encit-storage/prod:/opt/encit-storage/prod:ro
+      - ${SITES_HOST_DIR}:/opt/encit-sites:ro
+    networks:
+      - app_network
+    depends_on:
+      - jenkins-encit-server
+  encit-micro-sites:
+    build:
+      context: ./micro-sites
+      dockerfile: Dockerfile
+    container_name: encit-micro-sites
+    volumes:
+      - ${SITES_HOST_DIR}:/var/www/sites
+    environment:
+      APACHE_DOCUMENT_ROOT: /var/www/sites
+    networks:
+      - app_network
+    restart: unless-stopped
+
+volumes:
+  shared-data:
+  jenkins-data:
+  jenkins-agent-workdir:
+  mvn-repo:
+  logs-repo:
+
+networks:
+  app_network:
+    driver: bridge

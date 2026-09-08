@@ -1,0 +1,6 @@
+# Sustituir por el punto de entrada real.
+# Ejemplo típico:
+# from siia import create_app
+# app = create_app()
+
+from scaffold.app import app

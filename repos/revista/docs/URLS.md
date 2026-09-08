@@ -1,0 +1,3 @@
+- DEV: https://revista.dev.encit.unam.mx
+- TEST: https://revista.test.encit.unam.mx
+- PROD: https://revista.encit.unam.mx

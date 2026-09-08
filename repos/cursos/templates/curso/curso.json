@@ -1,0 +1,40 @@
+{
+  "slug": "curso-ejemplo-2026",
+  "tipo": "Curso",
+  "titulo": "Nombre del curso",
+  "subtitulo": "Subtítulo breve",
+  "paleta": "oceano",
+  "estado": "borrador",
+  "publicar_desde": "2026-08-20",
+  "publicar_hasta": "2026-09-30",
+  "fecha_inicio": "2026-10-05",
+  "fecha_fin": "2026-11-06",
+  "modalidad": "En línea",
+  "duracion_horas": 40,
+  "horario": "Viernes de 16:00 a 20:00 h",
+  "descripcion_corta": "Descripción breve para carrusel y tarjetas.",
+  "descripcion": "Descripción completa del curso.",
+  "objetivo": "Desarrollar conocimientos y habilidades para...",
+  "dirigido_a": "Personas interesadas en...",
+  "requisitos": [
+    "Requisito de ejemplo"
+  ],
+  "temario": [
+    {
+      "titulo": "Módulo 1. Fundamentos",
+      "descripcion": "Descripción del módulo."
+    }
+  ],
+  "costos": {
+    "general": 3000,
+    "comunidad_unam": 2500,
+    "moneda": "MXN"
+  },
+  "responsable": {
+    "nombre": "Nombre del responsable académico",
+    "semblanza": "Semblanza breve."
+  },
+  "inscripcion_url": "",
+  "programa": "",
+  "prioridad": 0
+}

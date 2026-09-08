@@ -1,0 +1,59 @@
+name: encit-moodle-prod
+
+x-moodle-volumes: &moodle-volumes
+  - ${MOODLE_CONFIG_DIR}/config.php:/var/www/html/config.php:ro
+  - ${MOODLEDATA_DIR}:/var/www/moodledata
+
+services:
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      TZ: America/Mexico_City
+    volumes:
+      - ${MARIADB_DATA_DIR}:/var/lib/mysql
+    networks: [moodle_internal]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  web:
+    image: ${REGISTRY}/encit/moodle:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes: *moodle-volumes
+    networks:
+      moodle_internal:
+      encit_prod_edge:
+        aliases: [moodle-prod-web]
+
+  cron:
+    image: ${REGISTRY}/encit/moodle:${IMAGE_TAG}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        while true; do
+          php admin/cli/cron.php || true
+          sleep 60
+        done
+    volumes: *moodle-volumes
+    networks: [moodle_internal]
+
+networks:
+  moodle_internal:
+    driver: bridge
+  encit_prod_edge:
+    external: true

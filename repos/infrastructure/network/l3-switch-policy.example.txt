@@ -1,0 +1,33 @@
+# INTENCIÓN DE CONFIGURACIÓN — SWITCH CAPA 3
+# Traducir a la sintaxis del fabricante.
+
+1. Crear las VLAN autorizadas para:
+   - servidores
+   - administración
+   - usuarios/laboratorios según corresponda
+
+2. Crear SVI/default gateway por VLAN SI el switch de capa 3 será el gateway.
+   No cambiar el gateway actual 10.10.10.40 hasta tener ventana de cambio y diseño aprobado.
+
+3. Configurar ruta por defecto hacia el equipo perimetral.
+
+4. Si DHCP vive en el equipo perimetral y no está en la misma VLAN:
+   - habilitar DHCP relay/ip-helper en cada SVI que deba recibir DHCP ENCiT;
+   - destino = IP DHCP del equipo perimetral.
+
+5. ACL mínimas sugeridas:
+   USUARIOS -> PROD: permitir TCP 80/443 según política.
+   USUARIOS -> CONTROL DEV/TEST: permitir TCP 443 sólo desde VLAN autorizadas.
+   ADMIN -> CONTROL: permitir 22/443/2222 según necesidad.
+   USUARIOS -> GITEA/JENKINS: denegar salvo grupos/redes autorizados.
+   TODAS -> DB ports (3306/5432/6379): denegar fuera de las redes Docker/host correspondientes.
+
+6. No usar la VLAN de usuarios como VLAN de gestión de switch/perimetral.
+
+7. Activar, si el equipo lo soporta y la política institucional lo permite:
+   - DHCP snooping
+   - Dynamic ARP Inspection
+   - protección BPDU / root guard
+   - port-security/802.1X según diseño institucional
+
+8. Registrar toda modificación y exportar respaldo de la configuración después del cambio.

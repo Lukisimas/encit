@@ -1,0 +1,4 @@
+# NO versionar el archivo real con contraseñas.
+# La instalación actual usa ACL; inventariar los usuarios actuales antes de migrar.
+# Ejemplo únicamente:
+user default on >CHANGE_ME ~* &* +@all

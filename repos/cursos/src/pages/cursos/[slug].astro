@@ -1,0 +1,47 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CourseHero from '../../components/CourseHero.astro';
+import { getPublishedCourses, money } from '../../lib/courses';
+
+export async function getStaticPaths() {
+  const courses = await getPublishedCourses();
+  return courses.map((course) => ({ params: { slug: course.data.slug }, props: { course } }));
+}
+const { course } = Astro.props;
+const d = course.data;
+---
+<BaseLayout title={`${d.titulo} | Educación Continua ENCiT`} description={d.descripcion_corta}>
+  <CourseHero course={course} />
+  <article class={`course-detail palette-detail-${d.paleta}`}>
+    <section><h2>Presentación</h2><p>{d.descripcion}</p></section>
+    <section><h2>Objetivo</h2><p>{d.objetivo}</p></section>
+    <section><h2>Dirigido a</h2><p>{d.dirigido_a}</p></section>
+
+    {d.requisitos.length > 0 &&
+      <section><h2>Requisitos</h2><ul>{d.requisitos.map((r) => <li>{r}</li>)}</ul></section>}
+
+    <section>
+      <h2>Programa</h2>
+      <ol class="program">
+        {d.temario.map((m) => <li><strong>{m.titulo}</strong>{m.descripcion && <p>{m.descripcion}</p>}</li>)}
+      </ol>
+      {d.programa && <a class="text-link" href={d.programa}>Descargar programa en PDF</a>}
+    </section>
+
+    <section>
+      <h2>Información</h2>
+      <dl class="detail-grid">
+        <div><dt>Inicio</dt><dd>{d.fecha_inicio}</dd></div>
+        <div><dt>Término</dt><dd>{d.fecha_fin}</dd></div>
+        <div><dt>Modalidad</dt><dd>{d.modalidad}</dd></div>
+        <div><dt>Duración</dt><dd>{d.duracion_horas} horas</dd></div>
+        <div><dt>Horario</dt><dd>{d.horario}</dd></div>
+        {d.costos?.general !== undefined && <div><dt>Costo general</dt><dd>{money(d.costos.general,d.costos.moneda)}</dd></div>}
+        {d.costos?.comunidad_unam !== undefined && <div><dt>Comunidad UNAM</dt><dd>{money(d.costos.comunidad_unam,d.costos.moneda)}</dd></div>}
+      </dl>
+    </section>
+
+    <section><h2>Responsable académico</h2><h3>{d.responsable.nombre}</h3><p>{d.responsable.semblanza}</p></section>
+    <p><a href="/cursos/">Consultar oferta actual</a> · <a href="/historico/">Consultar histórico</a></p>
+  </article>
+</BaseLayout>

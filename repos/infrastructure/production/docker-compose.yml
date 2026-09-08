@@ -1,0 +1,21 @@
+name: encit-production-platform
+
+services:
+  proxy:
+    image: nginx:1.30.4
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/conf.d:/etc/nginx/conf.d:ro
+      - ./proxy/security:/etc/nginx/security:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      encit_prod_edge:
+        aliases: [production-edge]
+
+networks:
+  encit_prod_edge:
+    external: true

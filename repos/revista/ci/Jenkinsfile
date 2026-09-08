@@ -1,0 +1,133 @@
+pipeline {
+  agent any
+  options { timestamps(); disableConcurrentBuilds() }
+  parameters {
+    string(name:'TESTED_TAG', defaultValue:'', description:'Sólo main: tag *-tested generado por release/*')
+    booleanParam(name:'OJS_DB_UPGRADE', defaultValue:false, description:'Ejecutar tools/upgrade.php tras backup')
+  }
+  environment {
+    REGISTRY='git.infra.encit.unam.mx'
+    IMAGE="${REGISTRY}/encit/ojs"
+    OJS_VERSION='3.5.0-5'
+  }
+  stages {
+    stage('Checkout'){steps{checkout scm}}
+
+    stage('Build candidate'){
+      when{not{branch 'main'}}
+      steps{
+        sh '''
+          docker build --pull --build-arg OJS_VERSION="$OJS_VERSION" \
+            -f image/Dockerfile -t "$IMAGE:${OJS_VERSION}-${GIT_COMMIT}" .
+        '''
+      }
+    }
+
+    stage('Image smoke'){
+      when{not{branch 'main'}}
+      steps{
+        sh '''
+          docker run --rm "$IMAGE:${OJS_VERSION}-${GIT_COMMIT}" php -v
+          docker run --rm "$IMAGE:${OJS_VERSION}-${GIT_COMMIT}" test -f /var/www/html/config.TEMPLATE.inc.php
+        '''
+      }
+    }
+
+    stage('Push candidate'){
+      when{anyOf{branch 'develop';branch pattern:"release/.*",comparator:"REGEXP"}}
+      steps{
+        withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+          sh '''
+            echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin
+            docker push "$IMAGE:${OJS_VERSION}-${GIT_COMMIT}"
+          '''
+        }
+      }
+    }
+
+    stage('DEV'){
+      when{branch 'develop'}
+      steps{sshagent(credentials:['control-deploy-ssh']){
+        sh '''
+          ssh deploy@10.10.10.20 "
+            cd /srv/encit/apps/revista/dev &&
+            sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${OJS_VERSION}-${GIT_COMMIT}/' .env &&
+            docker compose pull &&
+            docker compose up -d --remove-orphans
+          "
+        '''
+      }}
+    }
+
+    stage('TEST'){
+      when{expression{env.BRANCH_NAME==~ /^release\/.*/}}
+      steps{
+        sshagent(credentials:['control-deploy-ssh']){
+          sh '''
+            ssh deploy@10.10.10.20 "
+              cd /srv/encit/apps/revista/test &&
+              sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${OJS_VERSION}-${GIT_COMMIT}/' .env &&
+              docker compose pull &&
+              docker compose up -d --remove-orphans
+            "
+          '''
+        }
+        sh 'curl -fsS --retry 10 https://revista.test.encit.unam.mx/'
+      }
+    }
+
+    stage('Mark TESTED'){
+      when{expression{env.BRANCH_NAME==~ /^release\/.*/}}
+      steps{
+        withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+          sh '''
+            echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin
+            SRC="$IMAGE:${OJS_VERSION}-${GIT_COMMIT}"
+            DST="$IMAGE:${OJS_VERSION}-${GIT_COMMIT}-tested"
+            docker pull "$SRC"; docker tag "$SRC" "$DST"; docker push "$DST"
+          '''
+        }
+      }
+    }
+
+    stage('Validate PROD tag'){
+      when{branch 'main'}
+      steps{
+        sh '''
+          test -n "$TESTED_TAG"
+          case "$TESTED_TAG" in *-tested) ;; *) echo "TESTED_TAG debe terminar en -tested"; exit 2;; esac
+        '''
+        withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
+          sh '''
+            echo "$P"|docker login "$REGISTRY" -u "$U" --password-stdin
+            docker pull "$IMAGE:$TESTED_TAG"
+          '''
+        }
+      }
+    }
+
+    stage('Approve PROD'){
+      when{branch 'main'}
+      steps{input message:'¿Respaldar y desplegar exactamente esta imagen TESTED en revista.encit.unam.mx?'}
+    }
+
+    stage('PROD'){
+      when{branch 'main'}
+      steps{sshagent(credentials:['production-deploy-ssh']){
+        sh '''
+          ssh deploy@10.10.10.30 "
+            set -e
+            cd /srv/encit/apps/revista/prod
+            set -a; . ./.env; set +a
+            export BACKUP_DIR=/srv/encit/backups/revista/prod
+            ./scripts/backup.sh
+            sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env
+            docker compose pull
+            docker compose up -d --remove-orphans
+            if [ '${OJS_DB_UPGRADE}' = 'true' ]; then ./scripts/upgrade-db.sh; fi
+          "
+        '''
+      }}
+    }
+  }
+}

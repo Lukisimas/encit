@@ -1,0 +1,34 @@
+# Plantilla vendor-neutral. NO contiene configuración específica de fabricante.
+network:
+  control_server: "10.10.10.20"
+  production_server: "10.10.10.30"
+  current_example_gateway: "10.10.10.40"
+
+  # Completar cuando se instale el nuevo equipo.
+  perimeter_management_ip: "<IP_EQUIPO_PERIMETRAL>"
+  internal_dns_primary: "<IP_DNS_INTERNO_1>"
+  internal_dns_secondary: "<IP_DNS_INTERNO_2_OPCIONAL>"
+
+  institutional_dns_forwarders:
+    - "132.248.10.2"
+    - "132.248.204.1"
+
+  # Las subredes/VLAN reales deben ser autorizadas y documentadas por Redes/DGTIC.
+  vlans:
+    servers:
+      id: "<VLAN_SERVIDORES>"
+      subnet: "<SUBRED_SERVIDORES>"
+      gateway: "<GATEWAY_SERVIDORES>"
+    administration:
+      id: "<VLAN_ADMIN>"
+      subnet: "<SUBRED_ADMIN>"
+      gateway: "<GATEWAY_ADMIN>"
+    users:
+      id: "<VLAN_USUARIOS>"
+      subnet: "<SUBRED_USUARIOS>"
+      gateway: "<GATEWAY_USUARIOS>"
+
+  dhcp:
+    enabled_after_delegation: true
+    server: "<IP_EQUIPO_PERIMETRAL>"
+    relay_source: "<SVI_SWITCH_CAPA3>"
