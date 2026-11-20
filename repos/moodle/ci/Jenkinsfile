@@ -48,7 +48,7 @@ pipeline {
           ssh deploy@10.10.10.30 "
             set -e; cd /srv/encit/apps/moodle/prod
             set -a; . ./.env; set +a
-            export BACKUP_DIR=/srv/encit/backups/moodle/prod
+            export BACKUP_DIR=/data/encit/backups/moodle/prod
             ./scripts/backup.sh
             sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env
             docker compose pull && docker compose up -d --remove-orphans
