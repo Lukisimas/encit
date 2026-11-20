@@ -1,6 +1,6 @@
 # Índice de archivos
 
-Total: **190 archivos**.
+Total: **191 archivos**.
 
 ## Estructura
 
@@ -24,6 +24,7 @@ docs/10_RED_PERIMETRAL_CAPA3.md
 docs/11_CAMBIOS_RESPECTO_ZIPS_ANTERIORES.md
 docs/12_VALIDACION_PAQUETE.md
 docs/13_ALMACENAMIENTO_PRODUCCION.md
+docs/14_CERTBOT_XITLE_BOOTSTRAP.md
 repos/cursos/Dockerfile
 repos/cursos/README.md
 repos/cursos/astro.config.mjs
