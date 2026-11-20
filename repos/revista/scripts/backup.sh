@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 : "${BACKUP_DIR:?}"
 mkdir -p "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
 TS="$(date +%Y%m%d-%H%M%S)"
 docker compose exec -T db mariadb-dump \
   -u"$MARIADB_USER" -p"$MARIADB_PASSWORD" --single-transaction "$MARIADB_DATABASE" \
