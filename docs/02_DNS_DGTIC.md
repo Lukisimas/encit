@@ -9,7 +9,7 @@ otra consulta hacia:
 - `132.248.10.2`
 - `132.248.204.1`
 
-No se instala BIND en `10.10.10.20` ni `10.10.10.30`.
+No se instala BIND en los servidores de control ni de producción.
 
 ## Zonas privadas
 
@@ -19,14 +19,14 @@ Configurar en el equipo perimetral como Local DNS Zone / DNS Host Override / equ
 - `test.encit.unam.mx`
 - `infra.encit.unam.mx`
 
-Preferentemente con wildcard `A -> 10.10.10.20`. Si el producto no admite wildcard local, crear
+Preferentemente con wildcard `A -> 10.129.100.2`. Si el producto no admite wildcard local, crear
 los registros explícitos definidos en `repos/infrastructure/network/dns-policy.example.yml`.
 
 ## Etapa transitoria si DGTIC conserva DHCP
 
 Mientras los clientes continúen recibiendo `132.248.10.2` y `132.248.204.1` por DHCP, solicitar a
 DGTIC reenvío condicional de las tres zonas privadas hacia **el IP DNS del equipo perimetral**, no
-hacia `10.10.10.20`.
+hacia la IP de los servidores.
 
 Esto permite usar DEV/TEST/INFRA sin modificar estaciones y sin instalar BIND.
 
@@ -34,7 +34,7 @@ Esto permite usar DEV/TEST/INFRA sin modificar estaciones y sin instalar BIND.
 
 El DHCP ENCiT entregará:
 
-- gateway de cada VLAN según el diseño del switch L3;
+- gateway de cada VLAN según el diseño;
 - DNS interno del equipo perimetral;
 - dominio de búsqueda institucional si se aprueba.
 
@@ -43,11 +43,11 @@ retirarse si ya no es necesario.
 
 ## DNS público
 
-DGTIC continúa publicando únicamente servicios de producción:
+DGTIC continúa publicando únicamente servicios de producción, con los nombres confirmados:
 
 - `encit.unam.mx`
 - `siia.encit.unam.mx`
-- `revista.encit.unam.mx`
+- `xitle.encit.unam.mx`
 - `cursos.encit.unam.mx`
 - `ec.encit.unam.mx`
 
