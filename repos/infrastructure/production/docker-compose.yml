@@ -11,6 +11,9 @@ services:
       - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./proxy/conf.d:/etc/nginx/conf.d:ro
       - ./proxy/security:/etc/nginx/security:ro
+      # Certificados institucionales existentes (Moodle, SIIA, cursos, etc.).
+      - ./certs:/etc/nginx/certs:ro
+      # Estado de Certbot; el flujo de emisión/renovación se implementará aparte.
       - /srv/encit/platform/production/letsencrypt:/etc/letsencrypt:ro
     networks:
       encit_prod_edge:
