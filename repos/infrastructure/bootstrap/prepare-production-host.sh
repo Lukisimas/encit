@@ -31,6 +31,9 @@ install -d -m 0755 \
   "$APP_ROOT/data" \
   "$APP_ROOT/config"
 
+# Estado/certificados de Certbot: mantenerlos en el SSD y restringir acceso.
+install -d -m 0700 "$APP_ROOT/platform/production/letsencrypt"
+
 for app in "${APPS[@]}"; do
   install -d -m 0755 "$APP_ROOT/apps/$app/prod"
   install -d -m 0750 "$APP_ROOT/data/$app/prod"
