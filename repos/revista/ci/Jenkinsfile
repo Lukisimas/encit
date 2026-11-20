@@ -55,7 +55,7 @@ pipeline {
       }}
     }
     stage('TEST'){
-      when{expression{env.BRANCH_NAME==~ /^release\/ .*/}}
+      when{expression{env.BRANCH_NAME==~ /^release\/.*}}
       steps{
         sshagent(credentials:['control-deploy-ssh']){
           sh '''
@@ -71,7 +71,7 @@ pipeline {
       }
     }
     stage('Mark TESTED'){
-      when{expression{env.BRANCH_NAME==~ /^release\/ .*/}}
+      when{expression{env.BRANCH_NAME==~ /^release\/.*}}
       steps{
         withCredentials([usernamePassword(credentialsId:'gitea-registry',usernameVariable:'U',passwordVariable:'P')]){
           sh '''
