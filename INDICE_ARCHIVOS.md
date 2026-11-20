@@ -1,6 +1,6 @@
 # Índice de archivos
 
-Total: **189 archivos**.
+Total: **190 archivos**.
 
 ## Estructura
 
@@ -23,6 +23,7 @@ docs/09_COMANDOS_PRIMER_DESPLIEGUE.md
 docs/10_RED_PERIMETRAL_CAPA3.md
 docs/11_CAMBIOS_RESPECTO_ZIPS_ANTERIORES.md
 docs/12_VALIDACION_PAQUETE.md
+docs/13_ALMACENAMIENTO_PRODUCCION.md
 repos/cursos/Dockerfile
 repos/cursos/README.md
 repos/cursos/astro.config.mjs
@@ -79,8 +80,8 @@ repos/infrastructure/control/proxy/conf.d/ec.test.encit.unam.mx.conf
 repos/infrastructure/control/proxy/conf.d/git.infra.encit.unam.mx.conf
 repos/infrastructure/control/proxy/conf.d/jenkins.infra.encit.unam.mx.conf
 repos/infrastructure/control/proxy/conf.d/mail.infra.encit.unam.mx.conf
-repos/infrastructure/control/proxy/conf.d/revista.dev.encit.unam.mx.conf
-repos/infrastructure/control/proxy/conf.d/revista.test.encit.unam.mx.conf
+repos/infrastructure/control/proxy/conf.d/xitle.dev.encit.unam.mx.conf
+repos/infrastructure/control/proxy/conf.d/xitle.test.encit.unam.mx.conf
 repos/infrastructure/control/proxy/conf.d/siia.dev.encit.unam.mx.conf
 repos/infrastructure/control/proxy/conf.d/siia.test.encit.unam.mx.conf
 repos/infrastructure/control/proxy/conf.d/web.dev.encit.unam.mx.conf
@@ -102,7 +103,7 @@ repos/infrastructure/production/docker-compose.yml
 repos/infrastructure/production/proxy/conf.d/cursos.encit.unam.mx.conf
 repos/infrastructure/production/proxy/conf.d/ec.encit.unam.mx.conf
 repos/infrastructure/production/proxy/conf.d/encit.unam.mx.conf
-repos/infrastructure/production/proxy/conf.d/revista.encit.unam.mx.conf
+repos/infrastructure/production/proxy/conf.d/xitle.encit.unam.mx.conf
 repos/infrastructure/production/proxy/conf.d/siia.encit.unam.mx.conf
 repos/infrastructure/production/proxy/nginx.conf
 repos/infrastructure/production/proxy/security/headers.conf
