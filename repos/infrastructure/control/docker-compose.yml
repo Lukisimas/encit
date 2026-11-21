@@ -1,0 +1,128 @@
+name: encit-control-platform
+
+services:
+  gitea-db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: gitea
+      POSTGRES_USER: gitea
+      POSTGRES_PASSWORD: ${GITEA_DB_PASSWORD}
+      TZ: ${TZ:-America/Mexico_City}
+    volumes:
+      - /srv/encit/data/gitea/postgres:/var/lib/postgresql/data
+    networks: [gitea_internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gitea -d gitea"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  gitea:
+    image: docker.gitea.com/gitea:1.27.1
+    restart: unless-stopped
+    depends_on:
+      gitea-db:
+        condition: service_healthy
+    environment:
+      USER_UID: 1000
+      USER_GID: 1000
+      GITEA__database__DB_TYPE: postgres
+      GITEA__database__HOST: gitea-db:5432
+      GITEA__database__NAME: gitea
+      GITEA__database__USER: gitea
+      GITEA__database__PASSWD: ${GITEA_DB_PASSWORD}
+      GITEA__server__ROOT_URL: https://git.infra.encit.unam.mx/
+      GITEA__server__DOMAIN: git.infra.encit.unam.mx
+      GITEA__server__SSH_DOMAIN: git.infra.encit.unam.mx
+      GITEA__server__SSH_PORT: 2222
+      GITEA__server__START_SSH_SERVER: "true"
+      GITEA__server__SSH_LISTEN_PORT: 22
+      GITEA__security__SECRET_KEY: ${GITEA_SECRET_KEY}
+      GITEA__security__INTERNAL_TOKEN: ${GITEA_INTERNAL_TOKEN}
+      GITEA__server__LFS_JWT_SECRET: ${GITEA_LFS_JWT_SECRET}
+      GITEA__packages__ENABLED: "true"
+    volumes:
+      - /srv/encit/data/gitea/data:/data
+    ports:
+      # Sólo SSH de Gitea. Restringir 2222 con firewall a red interna/admin.
+      - "2222:22"
+    networks:
+      gitea_internal:
+      encit_control_edge:
+        aliases: [gitea]
+
+  docker-dind:
+    image: docker:29-dind
+    privileged: true
+    restart: unless-stopped
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - jenkins_docker_certs:/certs/client
+      - jenkins_docker_data:/var/lib/docker
+      - /usr/local/share/ca-certificates/encit-internal-root-ca.crt:/usr/local/share/ca-certificates/encit-internal-root-ca.crt:ro
+    networks: [jenkins_internal]
+    command:
+      - sh
+      - -ec
+      - |
+        update-ca-certificates || true
+        exec dockerd-entrypoint.sh --storage-driver=overlay2
+
+  jenkins:
+    build:
+      context: ./jenkins
+    restart: unless-stopped
+    depends_on: [docker-dind]
+    environment:
+      DOCKER_HOST: tcp://docker-dind:2376
+      DOCKER_CERT_PATH: /certs/client
+      DOCKER_TLS_VERIFY: "1"
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=true
+      TZ: ${TZ:-America/Mexico_City}
+    volumes:
+      - /srv/encit/data/jenkins/home:/var/jenkins_home
+      - jenkins_docker_certs:/certs/client:ro
+      - /usr/local/share/ca-certificates/encit-internal-root-ca.crt:/usr/local/share/ca-certificates/encit-internal-root-ca.crt:ro
+    networks:
+      jenkins_internal:
+      encit_control_edge:
+        aliases: [jenkins]
+
+  mailpit:
+    image: axllent/mailpit:v1.30.6
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: "1"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "1"
+    networks:
+      encit_control_edge:
+        aliases: [mailpit]
+
+  proxy:
+    image: nginx:1.30.4
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy/conf.d:/etc/nginx/conf.d:ro
+      - ./proxy/security:/etc/nginx/security:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      encit_control_edge:
+        aliases: [control-edge]
+
+volumes:
+  jenkins_docker_certs:
+  jenkins_docker_data:
+
+networks:
+  gitea_internal:
+    internal: true
+  jenkins_internal:
+    internal: true
+  encit_control_edge:
+    external: true

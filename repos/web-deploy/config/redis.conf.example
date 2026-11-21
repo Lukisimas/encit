@@ -1,0 +1,9 @@
+# Ejemplo equivalente a los flags observados en el Compose actual.
+bind 0.0.0.0
+protected-mode yes
+appendonly yes
+loglevel notice
+logfile /data/redis.log
+aclfile /data/users.acl
+rename-command REPLICAOF ""
+rename-command SLAVEOF ""

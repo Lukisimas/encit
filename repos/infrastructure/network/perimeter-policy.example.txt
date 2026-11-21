@@ -1,0 +1,37 @@
+# INTENCIÓN DE CONFIGURACIÓN — EQUIPO PERIMETRAL
+# Traducir a la sintaxis del fabricante.
+
+DNS
+---
+- Crear zonas/local overrides para:
+    dev.encit.unam.mx
+    test.encit.unam.mx
+    infra.encit.unam.mx
+- Wildcard de cada zona -> 10.10.10.20, si el producto admite wildcard local.
+- Forwarders para cualquier otro nombre:
+    132.248.10.2
+    132.248.204.1
+- Permitir recursión únicamente desde las VLAN ENCiT autorizadas.
+- No publicar el servicio DNS interno hacia Internet.
+
+DHCP
+----
+- Mantener DESACTIVADO hasta que DGTIC delegue formalmente los ámbitos.
+- Después de la delegación, entregar como DNS el/los resolutores internos del equipo perimetral.
+- Mantener gateway por VLAN según SVI del switch capa 3 o diseño aprobado.
+- Definir reservas/exclusiones para infraestructura y servidores.
+
+FIREWALL
+--------
+- Internet -> 10.10.10.20: denegar por defecto.
+- Internet -> DEV/TEST/INFRA: denegar.
+- VLAN autorizada -> 10.10.10.20: permitir 443; 22/2222 sólo administración.
+- DGTIC/Internet -> 10.10.10.30: permitir sólo los servicios productivos publicados por política.
+- DNS interno TCP/UDP 53: aceptar sólo desde VLAN ENCiT/administrativas.
+- Registrar denegaciones relevantes y eventos de seguridad.
+
+PRODUCCIÓN
+----------
+- Los nombres públicos encit.unam.mx, siia.encit.unam.mx, revista.encit.unam.mx,
+  cursos.encit.unam.mx y ec.encit.unam.mx continúan bajo DNS público autorizado por DGTIC.
+- No crear split-zone completa de encit.unam.mx si no existe una necesidad explícita.

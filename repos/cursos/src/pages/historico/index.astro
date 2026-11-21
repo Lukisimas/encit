@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CourseCard from '../../components/CourseCard.astro';
+import { getPublishedCourses } from '../../lib/courses';
+const courses = await getPublishedCourses();
+const years = [...new Set(courses.map(c => c.data.fecha_inicio.slice(0,4)))].sort().reverse();
+---
+<BaseLayout title="Histórico | Educación Continua ENCiT">
+  <section class="page-heading">
+    <h1>Histórico de Educación Continua</h1>
+    <p>Consulta actividades concluidas por año.</p>
+    <nav class="year-links">{years.map(y => <a href={`/historico/${y}/`}>{y}</a>)}</nav>
+  </section>
+  <div class="cards" data-history-catalog>
+    {courses.map((course) => <CourseCard course={course} />)}
+  </div>
+</BaseLayout>

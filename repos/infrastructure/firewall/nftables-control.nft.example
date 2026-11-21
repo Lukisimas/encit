@@ -1,0 +1,29 @@
+#!/usr/sbin/nft -f
+# EJEMPLO. NO APLICAR SIN ADAPTAR SUBREDES/VLAN ADMINISTRATIVAS REALES.
+# DNS/DHCP ya NO corren en este host.
+flush ruleset
+
+table inet filter {
+  chain input {
+    type filter hook input priority 0; policy drop;
+    ct state established,related accept
+    iif lo accept
+
+    # Reverse proxy interno DEV/TEST/INFRA.
+    # Sustituir 10.10.10.0/24 por las VLAN/subredes autorizadas reales.
+    ip saddr 10.10.10.0/24 tcp dport { 80, 443 } accept
+
+    # Administración/Git SSH. Refinar a VLAN administrativa, no a toda la red de usuarios.
+    ip saddr 10.10.10.0/24 tcp dport { 22, 2222 } accept
+
+    # No abrir TCP/UDP 53: el DNS vive en el equipo perimetral.
+  }
+
+  chain forward {
+    type filter hook forward priority 0; policy accept;
+  }
+
+  chain output {
+    type filter hook output priority 0; policy accept;
+  }
+}

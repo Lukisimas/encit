@@ -1,0 +1,11 @@
+name: encit-cursos-dev
+services:
+  site:
+    image: ${REGISTRY}/encit/cursos:${IMAGE_TAG}
+    restart: unless-stopped
+    networks:
+      encit_control_edge:
+        aliases: [cursos-dev-site]
+networks:
+  encit_control_edge:
+    external: true

@@ -1,0 +1,1 @@
+Copiar esta carpeta a src/data/oferta/<slug>/, editar curso.json y añadir programa.pdf si corresponde.

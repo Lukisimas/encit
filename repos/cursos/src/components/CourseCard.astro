@@ -1,0 +1,24 @@
+---
+const { course } = Astro.props;
+const d = course.data;
+---
+<article
+  class={`course-card palette-${d.paleta}`}
+  data-course
+  data-publish-from={d.publicar_desde}
+  data-publish-until={d.publicar_hasta}
+  data-start={d.fecha_inicio}
+  data-end={d.fecha_fin}
+  data-type={d.tipo}
+  data-year={d.fecha_inicio.slice(0,4)}
+  hidden>
+  <p class="eyebrow">{d.tipo}</p>
+  <h3>{d.titulo}</h3>
+  <p>{d.descripcion_corta}</p>
+  <dl>
+    <div><dt>Fechas</dt><dd>{d.fecha_inicio} — {d.fecha_fin}</dd></div>
+    <div><dt>Modalidad</dt><dd>{d.modalidad}</dd></div>
+    <div><dt>Duración</dt><dd>{d.duracion_horas} horas</dd></div>
+  </dl>
+  <a href={`/cursos/${d.slug}/`}>Ver información</a>
+</article>

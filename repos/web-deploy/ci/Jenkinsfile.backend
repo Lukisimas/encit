@@ -1,0 +1,28 @@
+pipeline {
+  agent any
+  environment {
+    REGISTRY = 'git.infra.encit.unam.mx'
+    IMAGE = "${REGISTRY}/encit/web-backend"
+  }
+  stages {
+    stage('Checkout') { steps { checkout scm } }
+    stage('Test') {
+      steps { sh './mvnw test || mvn test' }
+    }
+    stage('Build image') {
+      steps { sh 'docker build --pull -t "$IMAGE:${GIT_COMMIT}" .' }
+    }
+    stage('Push') {
+      when { anyOf { branch 'develop'; branch pattern: "release/.*", comparator: "REGEXP"; branch 'main' } }
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'gitea-registry',
+          usernameVariable: 'REG_USER', passwordVariable: 'REG_PASS')]) {
+          sh '''
+            echo "$REG_PASS" | docker login "$REGISTRY" -u "$REG_USER" --password-stdin
+            docker push "$IMAGE:${GIT_COMMIT}"
+          '''
+        }
+      }
+    }
+  }
+}
