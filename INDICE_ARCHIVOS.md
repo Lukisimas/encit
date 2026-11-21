@@ -1,10 +1,11 @@
 # Índice de archivos
 
-Total: **191 archivos**.
+Total: **193 archivos**.
 
 ## Estructura
 
 ```text
+.github/workflows/validate-infrastructure.yml
 .gitignore
 INDICE_ARCHIVOS.md
 MANIFEST.sha256

@@ -1,3 +1,0 @@
-- DEV: https://cursos.dev.encit.unam.mx
-- TEST: https://cursos.test.encit.unam.mx
-- PROD: https://cursos.encit.unam.mx
