@@ -31,5 +31,5 @@ Verificar los logs y el estado healthy de MariaDB antes de iniciar OJS.
 - DEV/TEST: `sandbox=On`, Mailpit.
 - PROD: `sandbox=Off`, SMTP institucional.
 - Revisar logs del `worker` y `scheduler`.
-- El servicio `web` es el único que se conecta a la red externa `encit_prod_edge`; worker y
-  scheduler sólo necesitan la red interna `ojs_internal`.
+- `worker` y `scheduler` ejecutan como UID/GID 33:33 (`www-data`) y sólo se conectan a
+  `ojs_internal`; el servicio `web` es el único que se conecta a `encit_prod_edge`.
