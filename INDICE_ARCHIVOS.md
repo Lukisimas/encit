@@ -1,6 +1,6 @@
 # Índice de archivos
 
-Total: **193 archivos**.
+Total: **191 archivos**.
 
 ## Estructura
 
