@@ -8,7 +8,7 @@ readonly OJS_UID=33
 readonly OJS_GID=33
 # Genera config.inc.php desde el config.TEMPLATE.inc.php que trae EXACTAMENTE la imagen OJS.
 # Uso: desde el directorio del entorno con .env:
-#   ../../scripts/generate-config.sh
+#   ./scripts/generate-config.sh
 
 ENV_FILE="${1:-.env}"
 set -a
@@ -26,7 +26,7 @@ docker run --rm "${REGISTRY}/encit/ojs:${IMAGE_TAG}" \
   cat /var/www/html/config.TEMPLATE.inc.php >"$TMP"
 
 python3 - "$TMP" "$TMP_CONFIG" <<'PY'
-import os,re,sys
+import json,os,re,sys
 src,dst=sys.argv[1:3]
 s=open(src,encoding='utf-8').read()
 def setv(key, val):
