@@ -7,9 +7,11 @@ readonly DATA_MOUNT="/data"
 readonly DATA_ROOT="${DATA_MOUNT}/encit"
 readonly APP_ROOT="/srv/encit"
 readonly APPS=(web siia revista cursos moodle)
+readonly DEPLOY_USER="deploy"
+readonly DEPLOY_GROUP="deploy"
+readonly DOCKER_GROUP="docker"
 
 # La imagen OJS parte de php:8.3-apache-bookworm, donde www-data es 33:33.
-# Fallar explícitamente si la identidad del host deja de coincidir.
 readonly OJS_UID="33"
 readonly OJS_GID="33"
 
@@ -23,6 +25,7 @@ command -v docker >/dev/null 2>&1 || fail "Docker no está instalado."
 command -v findmnt >/dev/null 2>&1 || fail "No se encontró findmnt."
 command -v mountpoint >/dev/null 2>&1 || fail "No se encontró mountpoint."
 command -v getent >/dev/null 2>&1 || fail "No se encontró getent."
+command -v id >/dev/null 2>&1 || fail "No se encontró id."
 
 mountpoint -q "$DATA_MOUNT" || fail "$DATA_MOUNT no está montado."
 actual_uuid="$(findmnt -n -o UUID --target "$DATA_MOUNT" | tr -d '[:space:]')"
@@ -30,6 +33,17 @@ actual_uuid="$(findmnt -n -o UUID --target "$DATA_MOUNT" | tr -d '[:space:]')"
   fail "El UUID montado en $DATA_MOUNT no coincide con el volumen de datos esperado (obtenido: ${actual_uuid:-vacío})."
 
 docker info >/dev/null 2>&1 || fail "El daemon de Docker no está disponible."
+
+# deploy es una identidad operativa preaprovisionada: no crearla aquí porque
+# su acceso SSH requiere una clave pública autorizada y una decisión explícita.
+getent passwd "$DEPLOY_USER" >/dev/null ||
+  fail "No existe el usuario $DEPLOY_USER. Créalo y configura su acceso SSH antes del bootstrap."
+getent group "$DEPLOY_GROUP" >/dev/null ||
+  fail "No existe el grupo $DEPLOY_GROUP."
+getent group "$DOCKER_GROUP" >/dev/null ||
+  fail "No existe el grupo $DOCKER_GROUP; instala Docker correctamente."
+id -nG "$DEPLOY_USER" | tr ' ' '\n' | grep -Fxq "$DOCKER_GROUP" ||
+  fail "El usuario $DEPLOY_USER no pertenece al grupo $DOCKER_GROUP. Revisa conscientemente este privilegio equivalente a root."
 
 host_ojs_uid="$(getent passwd www-data | cut -d: -f3)"
 host_ojs_gid="$(getent passwd www-data | cut -d: -f4)"
@@ -57,29 +71,27 @@ install -d -m 0755 \
 
 for app in "${APPS[@]}"; do
   install -d -m 0750 "$DATA_ROOT/data/$app/prod"
-  install -d -m 0750 "$DATA_ROOT/backups/$app/prod"
+  # Los pipelines Jenkins se conectan como deploy. 0700 evita que otros
+  # usuarios lean respaldos; deploy puede crearlos y endurecerlos a 0700.
+  install -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" -m 0700 \
+    "$DATA_ROOT/backups/$app/prod"
 done
 
 # Los directorios padre permiten traversal al grupo www-data, pero no escritura.
-# Las hojas OJS quedan a nombre de www-data; MariaDB conserva su gestión propia.
 install -d -o root -g "$OJS_GID" -m 0750 \
   "$APP_ROOT/data/revista" \
   "$APP_ROOT/data/revista/prod" \
   "$DATA_ROOT/data/revista" \
   "$DATA_ROOT/data/revista/prod"
 
-# OJS: los directorios montados sobre rutas de escritura de Apache/PHP
-# deben pertenecer al usuario www-data de la imagen (UID/GID 33:33).
-# No se asigna propietario a MariaDB aquí: su UID/GID se valida en la imagen
-# mariadb:11.8 antes del primer arranque.
+# OJS: directorios de escritura de Apache/PHP (UID/GID 33:33).
 install -d -o "$OJS_UID" -g "$OJS_GID" -m 0750 \
   "$APP_ROOT/data/revista/prod/config" \
   "$APP_ROOT/data/revista/prod/cache" \
   "$DATA_ROOT/data/revista/prod/files" \
   "$DATA_ROOT/data/revista/prod/public"
 
-# MariaDB usa un directorio dedicado en SSD; su entrypoint inicializa y
-# ajusta la propiedad del volumen según el usuario mysql de la imagen.
+# MariaDB administra su propiedad durante el primer arranque.
 install -d -m 0750 "$APP_ROOT/data/revista/prod/mariadb"
 
 # Moodle conserva sus archivos voluminosos en RAID5.
@@ -88,4 +100,4 @@ install -d -m 0750 "$DATA_ROOT/data/moodle/prod/moodledata"
 docker network inspect encit_prod_edge >/dev/null 2>&1 ||
   docker network create encit_prod_edge >/dev/null
 
-printf 'Host de producción preparado.\n'
+printf 'Host de producción preparado. Usuario deploy validado; respaldos propiedad de deploy:deploy (0700).\n'

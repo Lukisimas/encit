@@ -9,13 +9,18 @@
 - Cifrar respaldos que contengan datos personales o académicos.
 - Definir retención, acceso y eliminación conforme a las políticas de la UNAM/ENCiT.
 
-## Ubicación
+## Ubicación y permisos
 
 En producción, los respaldos locales se almacenan en el RAID5 montado en `/data`:
 
 ```text
 /data/encit/backups/<app>/prod/
 ```
+
+El bootstrap crea estos directorios con propietario `deploy:deploy` y modo `0700`.
+Los pipelines Jenkins se conectan al servidor como `deploy`, por lo que esa cuenta puede
+escribir los artefactos sin permisos globales ni cambios de propietario. Los scripts de
+respaldo aplican `umask 077`; OJS y Moodle endurecen además el directorio a `0700`.
 
 En el servidor de control, DEV y TEST conservan sus respaldos en:
 
@@ -24,6 +29,7 @@ En el servidor de control, DEV y TEST conservan sus respaldos en:
 ```
 
 Cada ejecución crea archivos con marca de tiempo. No mezclar respaldos de ambientes distintos.
+No usar `chmod 777` ni ejecutar los respaldos como root para eludir permisos incorrectos.
 
 ## Contenido mínimo
 
