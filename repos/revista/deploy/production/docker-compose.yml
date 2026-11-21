@@ -38,6 +38,7 @@ services:
         aliases: [revista-prod-web]
 
   worker:
+    user: "33:33"
     image: ${REGISTRY}/encit/ojs:${IMAGE_TAG}
     restart: unless-stopped
     depends_on:
@@ -48,6 +49,7 @@ services:
     networks: [ojs_internal]
 
   scheduler:
+    user: "33:33"
     image: ${REGISTRY}/encit/ojs:${IMAGE_TAG}
     restart: unless-stopped
     depends_on:
