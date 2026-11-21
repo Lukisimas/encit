@@ -55,7 +55,7 @@ setv("app_key", os.environ["OJS_APP_KEY"])
 host=re.sub(r'^https?://','',os.environ["PUBLIC_BASE_URL"]).split('/')[0]
 pat=r'(?m)^(allowed_hosts\s*=\s*).*$'
 if re.search(pat,s):
-    s=re.sub(pat, rf'\1\'["{host}"]\'', s, count=1)
+    s=re.sub(pat, lambda match: match.group(1) + "'[\"" + host + "\"]'", s, count=1)
 
 # SMTP si existen claves del template.
 smtp = os.environ.get("SMTP_HOST","")
