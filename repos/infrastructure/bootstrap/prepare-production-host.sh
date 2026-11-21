@@ -60,6 +60,14 @@ for app in "${APPS[@]}"; do
   install -d -m 0750 "$DATA_ROOT/backups/$app/prod"
 done
 
+# Los directorios padre permiten traversal al grupo www-data, pero no escritura.
+# Las hojas OJS quedan a nombre de www-data; MariaDB conserva su gestión propia.
+install -d -o root -g "$OJS_GID" -m 0750 \
+  "$APP_ROOT/data/revista" \
+  "$APP_ROOT/data/revista/prod" \
+  "$DATA_ROOT/data/revista" \
+  "$DATA_ROOT/data/revista/prod"
+
 # OJS: los directorios montados sobre rutas de escritura de Apache/PHP
 # deben pertenecer al usuario www-data de la imagen (UID/GID 33:33).
 # No se asigna propietario a MariaDB aquí: su UID/GID se valida en la imagen
