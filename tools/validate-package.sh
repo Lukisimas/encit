@@ -28,8 +28,8 @@ import pathlib,sys
 try:
     import yaml
 except ImportError:
-    print("PyYAML no instalado; se omite validación YAML.")
-    raise SystemExit(0)
+    print("ERROR: PyYAML es requisito para validar YAML.", file=sys.stderr)
+    raise SystemExit(1)
 root=pathlib.Path(sys.argv[1])
 bad=[]
 for p in list(root.rglob("*.yml"))+list(root.rglob("*.yaml")):
@@ -42,6 +42,15 @@ if bad:
     raise SystemExit(1)
 print("YAML OK")
 PY
+
+echo "== Respaldos y cuenta de despliegue =="
+BOOTSTRAP="$ROOT/repos/infrastructure/bootstrap/prepare-production-host.sh"
+grep -Fq 'DEPLOY_USER="deploy"' "$BOOTSTRAP" || { echo "Falta validar deploy en bootstrap" >&2; FAIL=1; }
+grep -Fq 'DOCKER_GROUP="docker"' "$BOOTSTRAP" || { echo "Falta validar grupo docker en bootstrap" >&2; FAIL=1; }
+grep -Fq 'install -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" -m 0700' "$BOOTSTRAP" || { echo "Los directorios de backup no se asignan a deploy:deploy 0700" >&2; FAIL=1; }
+for f in "$ROOT"/repos/{revista,moodle,siia,web-deploy}/scripts/backup.sh; do
+  grep -Eq '^umask 077$' "$f" || { echo "Falta umask 077: $f" >&2; FAIL=1; }
+done
 
 echo "== Restricciones =="
 if grep -R --line-number -E 'image:[[:space:]]*[^#]*:latest([[:space:]]|$)' "$ROOT/repos" \
@@ -60,7 +69,11 @@ fi
 
 echo "== Cursos =="
 if command -v node >/dev/null 2>&1; then
-  (cd "$ROOT/repos/cursos" && node scripts/validate-content.mjs)
+  if [[ -d "$ROOT/repos/cursos/src/data/oferta" ]]; then
+    (cd "$ROOT/repos/cursos" && node scripts/validate-content.mjs)
+  else
+    echo "No hay catálogo versionado en repos/cursos/src/data/oferta; se omite validate-content.mjs"
+  fi
 else
   echo "Node no instalado; se omite validate-content.mjs"
 fi

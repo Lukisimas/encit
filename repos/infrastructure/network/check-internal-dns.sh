@@ -10,12 +10,12 @@ fi
 names=(
   web.dev.encit.unam.mx
   siia.dev.encit.unam.mx
-  revista.dev.encit.unam.mx
+  xitle.dev.encit.unam.mx
   cursos.dev.encit.unam.mx
   ec.dev.encit.unam.mx
   web.test.encit.unam.mx
   siia.test.encit.unam.mx
-  revista.test.encit.unam.mx
+  xitle.test.encit.unam.mx
   cursos.test.encit.unam.mx
   ec.test.encit.unam.mx
   git.infra.encit.unam.mx
@@ -24,13 +24,14 @@ names=(
   mail.infra.encit.unam.mx
 )
 
+EXPECTED_IP="10.129.100.2"
 command -v dig >/dev/null || { echo "Se requiere dig (dnsutils/bind-utils)." >&2; exit 1; }
 
 for n in "${names[@]}"; do
   ip="$(dig +short A "$n" @"$DNS_SERVER" | tail -n1)"
   printf '%-40s -> %s\n' "$n" "${ip:-SIN RESPUESTA}"
-  [[ "$ip" == "10.10.10.20" ]] || {
-    echo "ERROR: $n debe resolver a 10.10.10.20" >&2
+  [[ "$ip" == "$EXPECTED_IP" ]] || {
+    echo "ERROR: $n debe resolver a $EXPECTED_IP" >&2
     exit 1
   }
 done

@@ -18,13 +18,13 @@ pipeline {
       }
     }}
     stage('DEV'){when{branch 'develop'}steps{sshagent(credentials:['control-deploy-ssh']){
-      sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/siia/dev &&
+      sh '''ssh deploy@10.129.100.2 "cd /srv/encit/apps/siia/dev &&
         sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env &&
         docker compose pull && docker compose up -d --remove-orphans"'''
     }}}
     stage('TEST'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
       sshagent(credentials:['control-deploy-ssh']){
-        sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/siia/test &&
+        sh '''ssh deploy@10.129.100.2 "cd /srv/encit/apps/siia/test &&
           sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env &&
           docker compose pull && docker compose up -d --remove-orphans"'''
       }
@@ -45,10 +45,10 @@ pipeline {
       input message:'¿Respaldar y desplegar exactamente SIIA TESTED?'
       sshagent(credentials:['production-deploy-ssh']){
         sh '''
-          ssh deploy@10.10.10.30 "
+          ssh deploy@10.129.101.2 "
             set -e; cd /srv/encit/apps/siia/prod
             set -a; . ./.env; set +a
-            export BACKUP_DIR=/srv/encit/backups/siia/prod
+            export BACKUP_DIR=/data/encit/backups/siia/prod
             ./scripts/backup.sh
             sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env
             docker compose pull && docker compose up -d --remove-orphans

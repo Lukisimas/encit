@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 : "${BACKUP_DIR:?}"
 mkdir -p "$BACKUP_DIR"
 TS="$(date +%Y%m%d-%H%M%S)"
