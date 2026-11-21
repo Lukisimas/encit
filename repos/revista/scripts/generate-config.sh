@@ -34,9 +34,9 @@ def setv(key, val):
     pat=rf'(?m)^({re.escape(key)}\s*=\s*).*$'
     if not re.search(pat,s):
         raise SystemExit(f"No se encontró {key} en config.TEMPLATE.inc.php")
-    # OJS INI acepta valores entre comillas.
-    val=str(val).replace('"','\\"')
-    s=re.sub(pat, rf'\1"{val}"', s, count=1)
+    # JSON quoting protege comillas y barras inversas en valores/secretos.
+    encoded=json.dumps(str(val), ensure_ascii=False)
+    s=re.sub(pat, lambda match: match.group(1) + encoded, s, count=1)
 
 setv("installed", "On")
 setv("base_url", os.environ["PUBLIC_BASE_URL"])

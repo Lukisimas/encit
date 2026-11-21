@@ -9,7 +9,7 @@ directorios de escritura de OJS con propietario 33:33 y modo 0750.
 Generar `config.inc.php` como root para que el archivo quede con propietario 33:33 y modo 0640:
 
 ```bash
-sudo ../../scripts/generate-config.sh
+sudo ./scripts/generate-config.sh
 ```
 
 No aplicar `chmod 777` ni asignar permisos recursivos sin evaluar el impacto. El directorio de
