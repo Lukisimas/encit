@@ -45,9 +45,7 @@ services:
         condition: service_healthy
     command: ["php", "lib/pkp/tools/jobs.php", "work", "--sleep=3", "--max-time=3600", "--memory=256"]
     volumes: *ojs-volumes
-    networks:
-      ojs_internal:
-      encit_prod_edge:
+    networks: [ojs_internal]
 
   scheduler:
     image: ${REGISTRY}/encit/ojs:${IMAGE_TAG}
@@ -64,9 +62,7 @@ services:
           sleep 60
         done
     volumes: *ojs-volumes
-    networks:
-      ojs_internal:
-      encit_prod_edge:
+    networks: [ojs_internal]
 
 networks:
   ojs_internal:

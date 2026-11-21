@@ -3,70 +3,62 @@
 Este repositorio maestro contiene la configuración y los esqueletos de despliegue para la
 infraestructura institucional de la Escuela Nacional de Ciencias de la Tierra (ENCiT).
 
-## Supuestos de red utilizados en los ejemplos
+## Direccionamiento vigente
 
-| Recurso | IP / nombre |
+| Recurso | Dirección |
 |---|---|
-| Servidor físico de control | `10.10.10.20` |
-| Servidor físico de producción | `10.10.10.30` |
-| Gateway actual usado en el ejemplo | `10.10.10.40` |
-| DNS institucional 1 | `132.248.10.2` |
-| DNS institucional 2 | `132.248.204.1` |
-| Equipo perimetral | `<IP_EQUIPO_PERIMETRAL>` |
-| Switch capa 3 | `<IP_GESTION_SWITCH_L3>` |
+| Servidor físico de control (DEV/TEST) | `10.129.100.2/28` — VLAN 50 |
+| Gateway de VLAN 50 | `10.129.100.1` |
+| Servidor físico de producción | `10.129.101.2/28` — VLAN 51 |
+| Gateway de VLAN 51 | `10.129.101.1` |
+| WAN OPNsense | `132.247.168.166/26` |
+| Gateway WAN | `132.247.168.190` |
 
-**Sustituir valores de ejemplo por los aprobados por Redes/DGTIC antes de aplicar configuraciones.**
+Las direcciones son las actualmente verificadas en la infraestructura ENCiT. Los cambios de
+direccionamiento deben documentarse y validarse antes de modificar los servidores.
 
 ## Modelo de operación
 
-- Servidor 1 (`10.10.10.20`): control, Gitea, Registry, Jenkins, DEV y TEST.
-- Servidor 2 (`10.10.10.30`): producción.
-- Equipo perimetral: DNS interno, forwarding DNS, firewall y DHCP cuando los ámbitos sean delegados.
-- Switch de capa 3: VLAN/SVI, routing inter-VLAN, ACL y DHCP relay cuando aplique.
+- Servidor de control (`10.129.100.2`): Gitea, Registry, Jenkins, DEV y TEST.
+- Servidor de producción (`10.129.101.2`): reverse proxy y aplicaciones productivas.
+- OPNsense administra firewall, NAT, DNS interno/Unbound y WireGuard.
+- El switch capa 3 administra la conectividad de las VLAN según la configuración aprobada.
 - Un repositorio / stack independiente por sistema.
 - Un solo Gitea y un solo Jenkins para toda la ENCiT.
 - Producción nunca reconstruye imágenes: recibe exactamente la imagen validada en TEST.
 - Las bases de datos no publican puertos hacia el host.
-- Las aplicaciones sólo comparten la red `edge`; sus redes internas son independientes.
-- **No se instala BIND ni DHCP en `10.10.10.20` o `10.10.10.30`.**
+- Sólo los servicios web que reciben tráfico del proxy se conectan a la red Docker `edge`;
+  workers y schedulers permanecen en sus redes internas.
+- No se instala BIND en los servidores.
 
-## Servicios
+## Servicios y nombres
 
 | Sistema | DEV | TEST | PROD |
 |---|---|---|---|
 | Portal | `web.dev.encit.unam.mx` | `web.test.encit.unam.mx` | `encit.unam.mx` |
 | SIIA | `siia.dev.encit.unam.mx` | `siia.test.encit.unam.mx` | `siia.encit.unam.mx` |
-| Revista | `revista.dev.encit.unam.mx` | `revista.test.encit.unam.mx` | `revista.encit.unam.mx` |
+| Revista Xitle (OJS) | `xitle.dev.encit.unam.mx` | `xitle.test.encit.unam.mx` | `xitle.encit.unam.mx` |
 | Cursos | `cursos.dev.encit.unam.mx` | `cursos.test.encit.unam.mx` | `cursos.encit.unam.mx` |
 | Moodle | `ec.dev.encit.unam.mx` | `ec.test.encit.unam.mx` | `ec.encit.unam.mx` |
 
-Infraestructura interna:
+Los nombres DEV y TEST son internos. El nombre público de la revista es
+`xitle.encit.unam.mx`; `revista` se conserva únicamente como identificador interno del
+repositorio, los stacks, los servicios y las rutas persistentes.
 
-- `git.infra.encit.unam.mx`
-- `jenkins.infra.encit.unam.mx`
-- `registry.infra.encit.unam.mx`
-- `mail.infra.encit.unam.mx`
+## DNS y publicación
 
-## DNS / DHCP
-
-Las zonas privadas viven en el **equipo perimetral**, no en los servidores:
-
-- `dev.encit.unam.mx`
-- `test.encit.unam.mx`
-- `infra.encit.unam.mx`
-
-Cada zona puede usar wildcard hacia `10.10.10.20`. Nginx del servidor de control enruta el
-hostname al stack correcto.
-
-Mientras DHCP siga bajo DGTIC, el equipo perimetral puede ponerse en servicio como DNS interno y
-DGTIC reenviar condicionalmente esas tres zonas hacia él. Cuando los ámbitos DHCP sean delegados,
-el DHCP ENCiT entregará directamente el DNS del equipo perimetral y éste reenviará el resto de
-consultas a `132.248.10.2` y `132.248.204.1`.
+- OPNsense/Unbound proporciona resolución interna para `dev.encit.unam.mx`,
+  `test.encit.unam.mx` e `infra.encit.unam.mx`.
+- Los nombres DEV, TEST e infraestructura no deben publicarse en DNS público.
+- El registro público A de `xitle.encit.unam.mx` apunta a la WAN de OPNsense
+  (`132.247.168.166`).
+- OPNsense reenvía TCP/80 y TCP/443 hacia el servidor de producción (`10.129.101.2`).
+- El certificado de Xitle se administra con Certbot/Let's Encrypt en el servidor de producción.
 
 ## Estructura
 
 - `repos/infrastructure`: plataforma común, reverse proxies, Jenkins/Gitea y plantillas de red.
-- `repos/infrastructure/network`: intención vendor-neutral para equipo perimetral y switch capa 3.
+- `repos/infrastructure/network`: intención vendor-neutral para OPNsense y switch capa 3.
 - `repos/web-deploy`: portal principal conservando su stack Docker independiente.
 - `repos/siia`: Dockerización y modernización progresiva del SIIA.
 - `repos/revista`: OJS DEV/TEST/PROD.
@@ -77,11 +69,11 @@ consultas a `132.248.10.2` y `132.248.204.1`.
 
 ## Orden recomendado
 
-1. Instalar/configurar equipo perimetral y switch L3; documentar red.
-2. Plataforma común en `10.10.10.20`.
+1. Validar OPNsense, VLAN, DNS interno y publicación de los servicios.
+2. Plataforma común en el servidor de control.
 3. Portal actual en DEV/TEST, retirando Jenkins de su Compose.
 4. Incorporación y modernización gradual de SIIA.
-5. OJS.
+5. OJS/Xitle.
 6. Cursos Astro.
 7. Moodle.
 8. Actualizaciones tecnológicas del portal como proyecto separado.
@@ -89,7 +81,7 @@ consultas a `132.248.10.2` y `132.248.204.1`.
 ## Advertencias
 
 - No activar DHCP ENCiT hasta que DGTIC delegue formalmente los ámbitos correspondientes.
-- No ejecutar ACL/firewall ni cambios de SVI con valores de ejemplo.
+- No ejecutar ACL/firewall ni cambios de routing con valores no verificados.
 - No almacenar `.env`, claves privadas, volcados o datos personales en Git.
 - El código fuente actual del SIIA no fue proporcionado; el paquete contiene infraestructura y
   esqueleto de modernización, pero las dependencias reales deben inventariarse en la VM.
