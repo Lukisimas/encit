@@ -25,7 +25,14 @@ correspondiente debe estar autorizada en `~deploy/.ssh/authorized_keys` del host
 La cuenta `deploy` debe aprovisionarse de forma explícita en ambos servidores antes de
 configurar los jobs:
 
-1. Crear el usuario local `deploy` con shell de inicio de sesión y directorio home.
+1. Crear el grupo y la cuenta si aún no existen (en cada host):
+
+   ```bash
+   getent group deploy >/dev/null || sudo groupadd deploy
+   id deploy >/dev/null 2>&1 || sudo useradd --create-home --gid deploy --shell /bin/bash deploy
+   sudo usermod -aG docker deploy
+   ```
+
 2. Instalar su clave pública SSH en `~deploy/.ssh/authorized_keys`, con propietario
    `deploy:deploy`, directorio `0700` y archivo `0600`.
 3. En el host de producción, agregar `deploy` al grupo `docker` y comprobar la nueva

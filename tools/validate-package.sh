@@ -69,7 +69,11 @@ fi
 
 echo "== Cursos =="
 if command -v node >/dev/null 2>&1; then
-  (cd "$ROOT/repos/cursos" && node scripts/validate-content.mjs)
+  if [[ -d "$ROOT/repos/cursos/src/data/oferta" ]]; then
+    (cd "$ROOT/repos/cursos" && node scripts/validate-content.mjs)
+  else
+    echo "No hay catálogo versionado en repos/cursos/src/data/oferta; se omite validate-content.mjs"
+  fi
 else
   echo "Node no instalado; se omite validate-content.mjs"
 fi
