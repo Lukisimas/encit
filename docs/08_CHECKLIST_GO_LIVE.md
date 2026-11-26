@@ -38,7 +38,7 @@
 - [ ] Adaptar las ACL de `git`, `jenkins` y `mail` a las redes autorizadas reales; actualmente conservan el ejemplo `10.10.10.0/24`.
 - [x] Validar HTTPS local de Gitea: `HTTP/2 200`; certificado wildcard vigente, SAN compatible con `git.infra.encit.unam.mx`, emitido por `ENCiT Internal Root CA`.
 - [x] Validar endpoint Registry `/v2/` por hostname: `HTTP/2 401` con desafío Bearer y cabecera `docker-distribution-api-version: registry/2.0` (respuesta esperada sin autenticación).
-- [ ] Instalar/confiar en `ENCiT Internal Root CA` en los clientes autorizados y validar HTTPS sin `curl -k`.
+- [x] CA raíz ENCiT localizada en `/usr/local/share/ca-certificates/encit-internal-root-ca.crt` en el host `pruebas`; `curl` sin `-k` validó HTTPS de Gitea (HTTP 200) y Registry `/v2/` (HTTP 401 esperado), con `TLS verify result: 0` en ambos casos. Validación documentada en `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`. Alcance limitado al host `pruebas`; falta validar otros clientes, Jenkins y Docker-in-Docker.
 - [ ] Validar autenticación y publicación/descarga de imagen de prueba en Gitea Container Registry.
 
 ## Aplicación Xitle (OJS)
