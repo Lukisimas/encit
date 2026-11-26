@@ -21,6 +21,20 @@
 - [ ] Si se migró DHCP, una estación piloto recibió IP/gateway/DNS correctos y existe rollback.
 - [ ] Configuración del equipo perimetral y switch respaldada.
 
+## Plataforma de control (Gitea/Jenkins)
+
+- [x] Primera implementación de Gitea 1.27.1, PostgreSQL 17, Jenkins, Docker-in-Docker, Nginx y Mailpit documentada en `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`.
+- [x] Seis contenedores de la plataforma observados activos en el host de control.
+- [x] Persistencia de Gitea y Jenkins, volúmenes de Docker-in-Docker y montaje de CA institucional observados.
+- [x] Gitea Packages / Container Registry habilitado en el Compose versionado.
+- [ ] Confirmar Gitea Packages en la configuración efectiva del contenedor (la extracción de `app.ini` no se completó).
+- [ ] Inspeccionar el job inicial `prueba-gitea` y validar checkout/ejecución desde Gitea.
+- [ ] Confirmar versión Java en runtime y conectividad TLS Jenkins → Docker-in-Docker.
+- [ ] Validar autenticación y publicación/descarga de prueba en Gitea Container Registry.
+- [ ] Conciliar plugins instalados con `control/jenkins/plugins.txt`.
+- [ ] Adaptar las ACL de `git`, `jenkins` y `mail` a las redes autorizadas reales; actualmente conservan el ejemplo `10.10.10.0/24`.
+- [ ] Verificar certificados wildcard y handshake HTTPS de los virtual hosts de infraestructura.
+
 ## Aplicación Xitle (OJS)
 
 - [x] Docker Engine `29.7.2`, Docker Compose `v5.5.0` y daemon activo comprobados en producción.
