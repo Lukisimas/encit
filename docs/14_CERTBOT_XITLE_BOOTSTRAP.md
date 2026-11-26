@@ -209,3 +209,18 @@ Después de actualizar el script corregido en producción, el administrador insp
 Los directorios ya existentes no deben eliminarse. El bootstrap corregido utiliza `install -d` para crear directorios y establecer sus modos/propietarios; puede volver a recorrer las rutas previstas. La red externa se creará al final si aún no existe.
 
 **Pendiente:** repetir manualmente el bootstrap ya actualizado y revisar su salida completa. Después, verificar estructura, propietarios/permisos y red. No se ha desplegado OJS ni el proxy y no se ha ejecutado Certbot.
+
+
+### Ejecución del bootstrap corregido
+
+**Fecha:** 26 de noviembre de 2026.
+
+El administrador informó que la segunda ejecución del script actualizado produjo el mensaje final esperado:
+
+`Host de producción preparado. Usuario deploy validado; respaldos propiedad de deploy:deploy (0700).`
+
+Esto indica que el script alcanzó su finalización sin reportar errores. La ejecución creó/completó las rutas previstas y creó la red Docker externa `encit_prod_edge` si no existía.
+
+**Alcance de la evidencia:** el mensaje final es el resultado reportado por el administrador; todavía falta una inspección independiente de directorios, propietarios, modos y configuración de la red. No implica que OJS, MariaDB, el proxy o Certbot estén desplegados o funcionando.
+
+**Siguiente verificación:** inspeccionar los directorios de SSD y RAID, confirmar que todos los directorios de respaldo son `deploy:deploy` con modo `0700`, revisar los permisos de los directorios OJS con UID/GID `33:33` y confirmar que `encit_prod_edge` existe como red bridge local. No iniciar contenedores en esta etapa.
