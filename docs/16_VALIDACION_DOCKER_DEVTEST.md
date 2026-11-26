@@ -65,15 +65,13 @@ Las redes Docker de control `172.19.0.0/16`, `172.20.0.0/16` y `172.21.0.0/16` n
 
 ## Registro de imágenes y pipeline OJS
 
-El comando `docker info --format '{{json .RegistryConfig.Mirrors}}'` devolvió `[]`. Ese campo corresponde a mirrors del daemon; **no demuestra** que no exista un registro privado ni permite determinar la URL, autenticación o disponibilidad del Container Registry de Gitea.
+El comando `docker info --format '{{json .RegistryConfig.Mirrors}}'` devolvió `[]`. Ese campo corresponde a mirrors del daemon; **no demuestra** que no exista un registro privado ni permite determinar por sí solo la URL, autenticación o disponibilidad del Container Registry de Gitea.
 
-A partir de esta inspección no se puede concluir si la imagen OJS:
-- aún debe construirse mediante Jenkins;
-- ya fue construida y publicada en el Container Registry de Gitea, pero no se ha descargado en este host;
-- se publica en otro registro;
-- o todavía no tiene un pipeline funcional.
+La revisión posterior del repositorio en la rama `docs/storage-xitle-hostnames` confirmó que `repos/infrastructure/control/docker-compose.yml` configura `GITEA__packages__ENABLED=true`. Por tanto, el diseño utiliza Gitea Packages, que incluye Container Registry, bajo el host `git.infra.encit.unam.mx`; no declara un contenedor independiente `registry:2`. Esta es una confirmación del código versionado, **no de la configuración efectiva del contenedor**: la extracción de parámetros no sensibles de `app.ini` en el host falló por un error de sintaxis de `awk`.
 
-Antes de hacer pull, build o deploy, se debe inspeccionar el Compose de la plataforma, la configuración de Gitea/Packages, los Jenkinsfiles y scripts de construcción de `repos/revista`. Después se identificará el tag realmente construido y validado en TEST. No utilizar el marcador `REPLACE_WITH_TESTED_TAG` del `.env.example` ni inventar un tag.
+Aún no se ha demostrado que Jenkins se autentique en Gitea ni que publique imágenes OJS. Tampoco se ha identificado un tag OJS construido y validado en TEST. La primera implementación de Gitea/Jenkins se documenta con más detalle en `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`.
+
+Antes de hacer pull, build o deploy, se debe confirmar Gitea Packages en runtime, inspeccionar el job `prueba-gitea`, revisar los Jenkinsfiles y scripts de construcción de `repos/revista`, y demostrar el flujo build → test → publicación. Después se identificará el tag realmente construido y validado en TEST. No utilizar el marcador `REPLACE_WITH_TESTED_TAG` del `.env.example` ni inventar un tag.
 
 ## Estado y siguientes verificaciones
 
