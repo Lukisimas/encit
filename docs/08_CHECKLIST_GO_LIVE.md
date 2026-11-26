@@ -197,3 +197,19 @@ Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. 
 - [ ] Confirmar paquete oficial OJS 3.5.0-6, checksum y PHP 8.3 mediante pruebas de plataforma.
 
 **Nota:** los inventarios de PROD corresponden a la inspección del 21-nov-2026. Los directorios indicados son rutas objetivo de diseño, no rutas creadas en el servidor.
+
+
+### Validación de almacenamiento y redes de Revista Xitle (26-nov-2026)
+
+- [x] Inventariar almacenamiento TEST: disco único `/dev/sda`, ext4 en `/`, 847 GiB disponibles; sin `/data` ni segundo disco.
+- [x] Confirmar Docker Root Dir TEST en `/var/lib/docker` y revisar persistencia existente de Gitea/Jenkins.
+- [x] Confirmar que `/srv/encit/data/revista` todavía no existe en TEST; proponer rutas independientes bajo `/srv/encit/data/revista/test/` sin crearlas.
+- [x] Inventariar redes Docker TEST: edge 172.18.0.0/16; Jenkins internal 172.19.0.0/16; Gitea internal 172.20.0.0/16; Jenkins egress 172.21.0.0/16.
+- [x] Confirmar almacenamiento PROD: SSD ext4 en `/` con 392 GiB libres y HDD ext4 en `/data` con aproximadamente 62 TiB libres.
+- [x] Confirmar que existen vacíos los directorios PROD de MariaDB, config, cache, files y public, con propietarios/permisos observados y separación SSD/HDD.
+- [x] Confirmar red `encit_prod_edge` 172.18.0.0/16 y ausencia de contenedores Docker en el inventario de PROD.
+- [ ] Validar UID/GID de las imágenes exactas de OJS y MariaDB antes de montar persistencia.
+- [ ] Crear las rutas TEST únicamente cuando se autorice iniciar la implementación.
+- [ ] Definir destino de backup independiente del host PROD y ensayar restauración integral DB + archivos.
+
+**Alcance de la validación:** inspección de solo lectura. No se crearon directorios ni contenedores; no se cambiaron propietarios/permisos ni se modificaron DNS, OPNsense, NAT o proxy.
