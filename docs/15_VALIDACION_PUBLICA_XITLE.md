@@ -44,6 +44,30 @@ La estación reportó como dirección de origen `10.28.203.52` e interfaz `Wi-Fi
 
 Esta prueba queda registrada como línea base previa a la instalación; no debe tratarse como una prueba de aceptación de NAT, firewall, proxy HTTP ni TLS.
 
+## Revisión de Port Forward y reglas WAN en OPNsense
+
+**Fecha:** 26 de noviembre de 2026  
+**Interfaz revisada:** WAN  
+**Destino interno de producción:** `10.129.101.2`
+
+El administrador compartió las dos reglas de Port Forward para la publicación de Xitle:
+
+| Parámetro | HTTP | HTTPS |
+|---|---|---|
+| Interfaz | WAN | WAN |
+| Protocolo | TCP | TCP |
+| Dirección de destino | WAN address | WAN address |
+| Puerto de destino | 80 (http) | 443 (https) |
+| IP de redirección | `10.129.101.2` | `10.129.101.2` |
+| Puerto de redirección | 80 (http) | 443 (https) |
+| Descripción | Publicación xitle.encit.unam.mx | Publicación xitle.encit.unam.mx |
+
+También se observaron en **Firewall → Rules → WAN**, dentro de las reglas generadas automáticamente por Port Forward, las entradas TCP hacia `10.129.101.2:80` y `10.129.101.2:443`, ambas con la descripción `Publicación xitle.encit.unam.mx`.
+
+El administrador confirmó que los valores de la regla revisada coinciden con lo esperado: acción `Pass`, regla habilitada, destino `10.129.101.2` y puerto de destino 80. La entrada automática para HTTPS aparece en la lista con destino `10.129.101.2` y puerto 443; su configuración equivalente debe considerarse pendiente de inspección individual si se requiere evidencia de cada campo.
+
+**Conclusión de configuración:** los dos Port Forward están definidos con los destinos y puertos previstos. La regla WAN HTTP revisada coincide con los valores esperados. La presencia de las reglas automáticas no prueba por sí sola la conectividad extremo a extremo; ésta se verificará cuando el servidor tenga listeners activos.
+
 ## Validaciones pendientes en el orden correcto
 
 1. Revisar la configuración de port forward TCP/80 y TCP/443 en OPNsense hacia `10.129.101.2`, junto con sus reglas WAN asociadas. Esta revisión de configuración no requiere que el servidor tenga servicios instalados.
@@ -63,8 +87,10 @@ Esta prueba queda registrada como línea base previa a la instalación; no debe 
 - [x] DNS A confirmado mediante resolvers públicos independientes (Cloudflare y Google devuelven `132.247.168.166`).
 - [x] Registro AAAA consultado; no se observa registro AAAA publicado.
 - [x] Prueba TCP/80 y TCP/443 ejecutada desde una estación externa antes de instalar servicios; resultados registrados como línea base no concluyente para NAT/firewall.
-- [ ] Configuración de NAT TCP/80 y TCP/443 revisada en OPNsense.
-- [ ] Reglas de firewall WAN y firewall local revisadas.
+- [x] Port Forward TCP/80 y TCP/443 revisados: WAN address hacia `10.129.101.2`, conservando los puertos.
+- [x] Regla WAN automática de HTTP observada y valores confirmados (Pass, habilitada, destino `10.129.101.2:80`).
+- [ ] Regla WAN automática de HTTPS inspeccionada individualmente en todos sus campos.
+- [ ] Firewall local del servidor revisado.
 - [ ] Servicios de producción instalados y listeners HTTP/HTTPS activos.
 - [ ] TCP/80 comprobado desde una red externa después de instalar el proxy.
 - [ ] TCP/443 comprobado desde una red externa después de instalar el proxy.
