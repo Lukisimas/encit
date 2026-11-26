@@ -206,3 +206,48 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 7. Resolver el solapamiento de `172.18.0.0/16` antes de requerir routing entre redes Docker de control y producción.
 
 **Conclusión:** la primera plataforma común de control ya está desplegada en el host de pruebas y el repositorio contiene su definición: Gitea/PostgreSQL, Jenkins, Docker-in-Docker, Nginx y Mailpit. Gitea Packages está habilitado en la configuración versionada, por lo que el Container Registry forma parte del diseño. Todavía no hay evidencia suficiente para afirmar que Jenkins consume Gitea, construye imágenes OJS o publica tags utilizables por producción. La siguiente fase debe validar esas integraciones y adaptar las ACL antes de usar la plataforma para el ciclo de promoción de Xitle.
+
+
+## 11. Validación HTTP del Container Registry y discrepancia DNS
+
+**Fecha:** 26 de noviembre de 2026  
+**Host de origen:** `pruebas` — `10.129.100.2/28`
+
+### Configuración efectiva de Packages
+
+Se leyó `/data/gitea/conf/app.ini` sin mostrar el resto de la configuración y se comprobó la variable de entorno específica:
+
+- `packages.ENABLED=true` en `app.ini`.
+- `GITEA__packages__ENABLED=true` en el entorno del contenedor.
+
+Ambos valores coinciden. Gitea Packages está habilitado en la configuración efectiva.
+
+### Pruebas del endpoint Registry
+
+- Desde el host, `http://172.18.0.4:3000/api/healthz` respondió `HTTP 200 OK`.
+- El proxy resolvió el alias Docker `gitea` a `172.18.0.4`.
+- El proxy publica TCP/80 y TCP/443 en el host.
+- El virtual host local `git.infra.encit.unam.mx` respondió `301` en HTTP y `HTTP/2 200` en HTTPS al forzar la conexión a `127.0.0.1`.
+- El endpoint `https://git.infra.encit.unam.mx/v2/`, forzado al proxy local, respondió `HTTP 401`. Esta respuesta es esperada sin autenticación y confirma que el endpoint Registry responde.
+- La misma URL por resolución habitual no conectó y agotó el tiempo de espera.
+
+### Discrepancia de resolución DNS
+
+En el host `pruebas`, `getent ahosts git.infra.encit.unam.mx` devolvió `132.247.168.160`. La ruta observada para esa dirección es la ruta predeterminada vía `10.129.100.1`, interfaz `eno1`, origen `10.129.100.2`.
+
+El administrador confirma que la IP WAN correcta de OPNsense es **`132.247.168.166`**. La resolución observada de `git.infra.encit.unam.mx` a `132.247.168.160` es incorrecta y debe corregirse en el origen DNS que atiende al host (DNS interno/override o registro autoritativo correspondiente). No se modificó DNS, OPNsense, Nginx ni el servidor durante estas pruebas; este repositorio no administra directamente los registros DNS.
+
+**Conclusión:** Gitea y el endpoint Registry funcionan por la ruta local. La prueba por hostname está bloqueada por la discrepancia DNS/ruta asociada a la dirección `132.247.168.160`; no es evidencia de un fallo de Gitea. La corrección DNS a `132.247.168.166` y su posterior verificación quedan pendientes.
+
+### Estado actualizado
+
+| Elemento | Estado |
+|---|---|
+| Gitea Packages en `app.ini` y entorno | Confirmado habilitado |
+| Salud HTTP de Gitea desde el host | HTTP 200 |
+| Proxy local y virtual host de Gitea | HTTP 301 / HTTPS 200 |
+| Endpoint Registry local `/v2/` | HTTP 401 esperado sin autenticación |
+| Resolución de `git.infra.encit.unam.mx` en `pruebas` | Incorrecta: devuelve `132.247.168.160` |
+| IP WAN correcta confirmada por el administrador | `132.247.168.166` |
+| Corrección del registro DNS/override | Pendiente; no se modificó OPNsense |
+| Login, push y pull autenticados | Pendientes |
