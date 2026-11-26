@@ -20,6 +20,10 @@ Esta confirmación documenta el estado reportado; no sustituye las pruebas técn
 
 La publicación DNS y el NAT son funciones distintas: que el nombre resuelva a la WAN no demuestra por sí solo que el puerto 80 llegue al servidor.
 
+## Evidencia de validación
+
+El intento de comprobación desde el entorno de trabajo del 26 de noviembre de 2026 no fue concluyente: el resolver de ese entorno no pudo resolver el nombre y tampoco se pudieron establecer conexiones salientes directas a la IP WAN. Esto no demuestra una falla en DNS, OPNsense o producción. Registrar las pruebas repetidas desde una estación externa en `docs/15_VALIDACION_PUBLICA_XITLE.md` antes de ejecutar Certbot.
+
 ## Comprobaciones DNS previas
 
 Desde un equipo externo o desde una estación con acceso a Internet:
