@@ -27,7 +27,8 @@
 - [x] Seis contenedores de la plataforma observados activos en el host de control.
 - [x] Persistencia de Gitea y Jenkins, volúmenes de Docker-in-Docker y montaje de CA institucional observados.
 - [x] Gitea Packages / Container Registry habilitado en el Compose versionado.
-- [ ] Confirmar Gitea Packages en la configuración efectiva del contenedor (la extracción de `app.ini` no se completó).
+- [x] Gitea Packages confirmado habilitado en `app.ini` y en `GITEA__packages__ENABLED` (ver `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`).
+- [ ] Corregir la resolución de `git.infra.encit.unam.mx`: el host `pruebas` obtiene `132.247.168.160`; la IP WAN correcta confirmada es `132.247.168.166`. Revisar el registro DNS interno/override correspondiente y volver a validar.
 - [ ] Inspeccionar el job inicial `prueba-gitea` y validar checkout/ejecución desde Gitea.
 - [ ] Confirmar versión Java en runtime y conectividad TLS Jenkins → Docker-in-Docker.
 - [ ] Validar autenticación y publicación/descarga de prueba en Gitea Container Registry.
