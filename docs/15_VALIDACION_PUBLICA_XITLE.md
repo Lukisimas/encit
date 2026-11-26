@@ -198,3 +198,26 @@ rtt min/avg/max/mdev = 4.088/4.095/4.103/0.007 ms
 - [ ] HTTPS validado desde Internet.
 
 No se han realizado cambios en OPNsense ni en los servidores como parte de estas pruebas.
+
+## Inspección inicial del firewall local (`nftables`)
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Equipo:** servidor de producción  
+**Comando ejecutado:** `sudo nft list ruleset`.
+
+### Hallazgos observados
+
+- Se muestran las tablas `ip nat` e `ip filter`, ambas advertidas por el propio sistema como administradas por `iptables-nft`; no deben modificarse directamente con `nft`.
+- En IPv4, la cadena `FORWARD` tiene política `drop` y salta a las cadenas `DOCKER-USER` y `DOCKER-FORWARD`. Esta política corresponde al tráfico reenviado, no determina por sí misma si se aceptan conexiones dirigidas al host.
+- La salida compartida no muestra una cadena `INPUT` ni reglas explícitas de filtrado de entrada para el host en la tabla `ip filter`.
+- Las cadenas Docker mostradas están vacías, salvo las reglas de forwarding/aislamiento y masquerade para la red `172.17.0.0/16`. Los contadores visibles están en cero.
+- También aparecen tablas IPv6 `ip6 nat` e `ip6 filter`, con cadenas Docker sin reglas de entrada del host visibles.
+- La existencia de las cadenas Docker no demuestra que haya contenedores o servicios publicados; anteriormente se observó `docker0` en estado DOWN y el administrador indicó que aún no se habían instalado servicios en producción.
+
+### Interpretación y límites
+
+En el ruleset compartido no se observa una política `INPUT` que bloquee conexiones entrantes al propio servidor. La política `drop` de `FORWARD` no debe confundirse con un bloqueo de los puertos locales 80/443. No obstante, esta inspección no descarta que UFW, firewalld u otro mecanismo de administración del firewall esté activo, ni valida todavía la recepción de conexiones públicas.
+
+**No se modificó ninguna regla ni configuración del servidor.** Las advertencias de `iptables-nft` se registran como indicación de propiedad de esas tablas; no se deben editar directamente con `nft`.
+
+**Siguiente comprobación:** consultar el estado de UFW antes de concluir la revisión del firewall local.
