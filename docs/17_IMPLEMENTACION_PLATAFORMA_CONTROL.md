@@ -324,3 +324,50 @@ Además, el administrador confirmó que ya están registradas en Jenkins las sig
 Se documentan únicamente los identificadores, el ámbito y las descripciones visibles. Los valores secretos de ambas credenciales no se consultaron ni se incorporan al repositorio. La existencia de estas entradas confirma que las credenciales están registradas en Jenkins; por sí sola no demuestra que los tokens sigan vigentes, que sus scopes sean suficientes, que Jenkins pueda autenticarse contra Gitea ni que Docker Registry acepte login, push o pull.
 
 **Validaciones pendientes:** comprobar de forma controlada qué credencial corresponde a la API de Gitea y cuál se utilizará para Container Registry; verificar los permisos mínimos/scopes y la vigencia sin revelar los valores; validar conectividad TLS desde el contenedor Jenkins; y realizar login y push/pull de una imagen de prueba. No imprimir secretos en consola ni logs, y no copiar tokens a archivos versionados.
+
+
+### Diagnóstico de resolución DNS desde Jenkins y corrección declarada
+
+**Fecha:** 26 de noviembre de 2026  
+**Host:** `pruebas` — `10.129.100.2/28`  
+**Servicio:** `encit-control-platform-jenkins-1`  
+**Archivo Compose operativo inspeccionado:** `/srv/encit/platform/control/docker-compose.yml`
+
+Se ejecutó un Pipeline temporal de diagnóstico en el nodo `built-in` de Jenkins. La prueba inicial de API Gitea no llegó a establecer conexión: `curl` devolvió `Could not resolve host: git.infra.encit.unam.mx`. Por tanto, en esa ejecución no se alcanzó la fase TLS ni se probó la autenticación.
+
+El diagnóstico desde el mismo agente mostró:
+
+- Hostname del contenedor: `fedb4139c9de`; nodo Jenkins: `built-in`; executor: `0`.
+- Resolver del contenedor: `127.0.0.11` (DNS embebido de Docker).
+- DNS upstream informados por Docker: `132.248.10.2` y `132.248.204.1`.
+- Sin entrada para `git.infra.encit.unam.mx` en `/etc/hosts` del contenedor.
+- El host `pruebas`, en cambio, resuelve el nombre a `10.129.100.2` mediante su resolución local.
+
+La inspección de Docker confirmó que Jenkins pertenece a las redes `encit-control-platform_jenkins_internal` (`172.19.0.3`) y `encit_control_edge` (`172.18.0.5`). El servicio Compose `jenkins` ya monta la CA raíz ENCiT en modo de sólo lectura en `/usr/local/share/ca-certificates/encit-internal-root-ca.crt`; la existencia del montaje no demuestra por sí sola que Java/curl dentro del contenedor confíen en ella.
+
+#### Cambio aplicado al archivo Compose operativo
+
+Se añadió al servicio `jenkins` la siguiente declaración:
+
+```yaml
+extra_hosts:
+  - "git.infra.encit.unam.mx:10.129.100.2"
+```
+
+La configuración efectiva de Compose se validó con `sudo docker compose config -q` sin errores. La representación JSON de Compose confirmó:
+
+```
+['git.infra.encit.unam.mx=10.129.100.2']
+```
+
+**Estado de aplicación:** el cambio fue guardado y la configuración Compose validada, pero en el momento de documentar aún no se había recreado ni reiniciado el contenedor Jenkins. Por ello, todavía no se ha comprobado que la nueva entrada esté presente en el contenedor en ejecución ni que el agente resuelva Gitea.
+
+#### Alcance y siguientes verificaciones
+
+1. Aplicar el cambio de forma controlada recreando únicamente el servicio Jenkins, previa revisión de impacto y autorización operativa.
+2. Verificar desde el agente `built-in` que `getent ahostsv4 git.infra.encit.unam.mx` devuelve `10.129.100.2`.
+3. Repetir la prueba HTTPS sin `-k` para comprobar confianza TLS desde el contenedor.
+4. Sólo después de confirmar TLS, ejecutar la prueba autenticada a `/api/v1/user` con la credencial Jenkins, sin imprimir tokens, encabezados ni cuerpos sensibles.
+5. Validar por separado el tipo y uso de la credencial Gitea Personal Access Token y la credencial Secret text.
+
+No se modificaron DNS institucionales, OPNsense ni redes Docker. No se revelaron ni documentaron valores de credenciales. La prueba inicial de autenticación quedó **sin ejecutar efectivamente** debido al fallo DNS.
