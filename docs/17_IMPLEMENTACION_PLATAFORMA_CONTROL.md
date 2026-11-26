@@ -83,7 +83,7 @@ El servicio `docker-dind`:
 - Recibe la CA raíz institucional en modo sólo lectura y ejecuta `update-ca-certificates` al iniciar.
 - Permanece en la red interna `jenkins_internal`, no en la red del proxy.
 
-La salida del host confirmó los montajes de datos y certificados de Docker-in-Docker y el montaje de la CA institucional en ambos contenedores. No se validó todavía una conexión TLS efectiva desde Jenkins al daemon ni la confianza de la CA contra Gitea.
+La salida del host confirmó los montajes de datos y certificados de Docker-in-Docker y el montaje de la CA institucional en ambos contenedores. No se validó todavía una conexión TLS efectiva desde Jenkins al daemon ni la confianza de la CA contra Gitea. En el host físico `pruebas`, la CA raíz está instalada y la conexión HTTPS a Gitea ya fue validada sin `-k`; esta prueba no cubre los contenedores Jenkins ni DinD.
 
 ### Plugins
 
@@ -193,7 +193,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 | Pipeline y tag OJS probados en TEST | Pendiente |
 | ACL de infraestructura adaptada a redes ENCiT | Pendiente |
 | Certificado wildcard de Gitea | SAN cubre `git.infra.encit.unam.mx`; vigente y emitido por `ENCiT Internal Root CA` |
-| Confianza TLS en clientes | Pendiente; `curl` sin `-k` no confía en la CA interna |
+| Confianza TLS en host `pruebas` | Confirmada; `curl` sin `-k` valida Gitea y `/v2/` con resultado TLS 0. Otros clientes y contenedores pendientes |
 | Versión Java runtime | Pendiente |
 
 ## 10. Siguientes pasos recomendados (sólo lectura inicialmente)
@@ -287,3 +287,22 @@ El certificado tiene como sujeto `C=MX, O=UNAM, OU=ENCiT, CN=ENCiT Internal Root
 Esto confirma que el host `pruebas` confía en la CA institucional y valida correctamente el certificado TLS de Gitea. El HTTP 401 de `/v2/` es esperado sin autenticación y no representa un fallo TLS.
 
 **Alcance:** esta validación corresponde únicamente al host `pruebas`. No demuestra que otros equipos, Jenkins o Docker-in-Docker tengan instalada y utilicen la misma CA. Tampoco valida aún login, push ni pull de imágenes. No se modificó el almacén de certificados durante esta comprobación.
+
+
+### Cliente Docker disponible en el host de control
+
+**Fecha:** 26 de noviembre de 2026  
+**Host:** `pruebas`  
+**Usuario de sesión:** `administrador` (UID/GID 1000)
+
+La inspección reportó:
+
+- Docker CLI disponible en `/usr/bin/docker`.
+- Docker CLI versión `29.7.2`, build `a7dcaa6`.
+- Docker Engine versión `29.7.2`.
+- `sudo docker version` y `sudo docker info` respondieron correctamente.
+- El usuario `administrador` pertenece al grupo `sudo`, pero no al grupo `docker`; por tanto, las operaciones de Docker se ejecutan con `sudo`.
+
+Esta comprobación valida la disponibilidad del cliente y del daemon en el host de control. No se ejecutó `docker login`, no se guardaron credenciales y no se realizó push/pull de imágenes.
+
+**Criterio para la siguiente prueba:** antes de autenticar, definir si se utilizará una cuenta técnica dedicada de Gitea con un token de alcance mínimo para Packages (lectura/escritura según la prueba), en lugar de reutilizar la cuenta administrativa. Las credenciales deben introducirse de forma interactiva y nunca documentarse en Git.
