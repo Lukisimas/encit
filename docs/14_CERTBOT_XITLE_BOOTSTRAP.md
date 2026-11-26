@@ -138,3 +138,20 @@ Se inspeccionaron `repos/infrastructure/production/docker-compose.yml`, la confi
 - La guía de Certbot sigue pendiente de ejecución real. No se ha ejecutado Certbot, no se ha iniciado el proxy ni OJS y no se ha probado la llegada pública de TCP/80 con un listener activo.
 
 **Estado de la auditoría:** los archivos necesarios para proxy, virtual host y stack OJS están presentes en Git y sus referencias de red/alias coinciden. Esto acredita preparación del repositorio, no instalación ni funcionamiento en producción. No se realizaron cambios en el servidor, OPNsense ni servicios.
+
+
+### Validación de precondiciones del host de producción
+
+**Fecha:** 26 de noviembre de 2026.
+
+El administrador ejecutó las comprobaciones de versiones/estado de Docker, cuentas y grupos requeridos por `prepare-production-host.sh`. Resultado:
+
+- Docker Engine `29.7.2` instalado.
+- Docker Compose `v5.5.0` disponible.
+- Servicio `docker` en estado `active`.
+- Usuario `deploy`: UID/GID `1001:1001`, shell `/bin/bash`.
+- Grupo `deploy`: GID `1001`.
+- Grupo `docker`: GID `989`; `deploy` pertenece a dicho grupo.
+- Usuario/grupo `www-data`: UID/GID `33:33`, coincide con la identidad esperada por la imagen OJS.
+
+**Conclusión:** se satisfacen las precondiciones de Docker y de identidad de `deploy`/`www-data` verificadas en esta etapa. Esta validación no ejecuta el bootstrap ni comprueba todavía las demás precondiciones que el script consulta (montaje y UUID de `/data`, existencia de rutas, red Docker, entre otras). No se realizaron cambios en el servidor.
