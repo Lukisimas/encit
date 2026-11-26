@@ -36,7 +36,10 @@
 - [ ] Validar autenticación y publicación/descarga de prueba en Gitea Container Registry.
 - [ ] Conciliar plugins instalados con `control/jenkins/plugins.txt`.
 - [ ] Adaptar las ACL de `git`, `jenkins` y `mail` a las redes autorizadas reales; actualmente conservan el ejemplo `10.10.10.0/24`.
-- [ ] Verificar certificados wildcard y handshake HTTPS de los virtual hosts de infraestructura.
+- [x] Validar HTTPS local de Gitea: `HTTP/2 200`; certificado wildcard vigente, SAN compatible con `git.infra.encit.unam.mx`, emitido por `ENCiT Internal Root CA`.
+- [x] Validar endpoint Registry `/v2/` por hostname: `HTTP/2 401` con desafío Bearer y cabecera `docker-distribution-api-version: registry/2.0` (respuesta esperada sin autenticación).
+- [ ] Instalar/confiar en `ENCiT Internal Root CA` en los clientes autorizados y validar HTTPS sin `curl -k`.
+- [ ] Validar autenticación y publicación/descarga de imagen de prueba en Gitea Container Registry.
 
 ## Aplicación Xitle (OJS)
 
