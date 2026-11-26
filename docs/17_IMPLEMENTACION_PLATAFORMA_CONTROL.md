@@ -192,7 +192,8 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 | Login y push/pull del Container Registry | Pendiente |
 | Pipeline y tag OJS probados en TEST | Pendiente |
 | ACL de infraestructura adaptada a redes ENCiT | Pendiente |
-| Certificados wildcard y HTTPS funcional | Pendiente de validación de contenido y handshake |
+| Certificado wildcard de Gitea | SAN cubre `git.infra.encit.unam.mx`; vigente y emitido por `ENCiT Internal Root CA` |
+| Confianza TLS en clientes | Pendiente; `curl` sin `-k` no confía en la CA interna |
 | Versión Java runtime | Pendiente |
 
 ## 10. Siguientes pasos recomendados (sólo lectura inicialmente)
@@ -231,6 +232,18 @@ Ambos valores coinciden. Gitea Packages está habilitado en la configuración ef
 - El endpoint `https://git.infra.encit.unam.mx/v2/`, forzado al proxy local, respondió `HTTP 401`. Esta respuesta es esperada sin autenticación y confirma que el endpoint Registry responde.
 - La misma URL por resolución habitual no conectó y agotó el tiempo de espera.
 
+### Validación HTTPS local y Container Registry
+
+Con la entrada local de `/etc/hosts` apuntando a `10.129.100.2`, se repitieron las pruebas directamente contra el servidor de pruebas:
+
+- `https://git.infra.encit.unam.mx/` respondió `HTTP/2 200` a través de Nginx y Gitea.
+- `https://git.infra.encit.unam.mx/v2/` respondió `HTTP/2 401` e incluyó `docker-distribution-api-version: registry/2.0` y un desafío Bearer para `container_registry`. El `401` es el comportamiento esperado sin autenticación y confirma que el endpoint del Container Registry está respondiendo.
+- El certificado presentado tiene sujeto `CN=*.infra.encit.unam.mx`, SAN `DNS:*.infra.encit.unam.mx` y `DNS:infra.encit.unam.mx`, emisor `CN=ENCiT Internal Root CA`, vigencia del 21 de agosto de 2026 al 23 de noviembre de 2028 y huella SHA-256 `CE:BC:B3:6D:A4:56:C7:FE:CE:83:44:C5:0F:E3:17:9C:FE:DE:6D:81:5B:24:34:F6:74:D5:00:64:10:49:12:AB`.
+
+El SAN comodín cubre el hostname `git.infra.encit.unam.mx` y el certificado de servidor no es autofirmado: fue emitido por la CA raíz interna de ENCiT. El error previo de `curl` sin `-k` indica que el cliente no confía en esa CA o no dispone de la cadena de confianza necesaria; no indica un error de coincidencia del hostname ni que el certificado de servidor haya expirado. Las pruebas anteriores usaron `-k` sólo para diagnóstico y no validan la confianza TLS del cliente.
+
+**Pendiente:** instalar/confiar en la CA raíz interna en los clientes que deban acceder a Gitea y validar posteriormente con `curl` sin `-k`. Después realizar login y push/pull de una imagen de prueba. No se registran claves privadas ni secretos.
+
 ### Resolución interna y direccionamiento correcto
 
 El diagnóstico inicial encontró en `/etc/hosts` del host `pruebas` una entrada explícita que asociaba `git.infra.encit.unam.mx` con `132.247.168.160`. Las consultas A directas a los DNS institucionales `132.248.10.2` y `132.248.204.1`, y como referencia a `1.1.1.1` y `8.8.8.8`, devolvieron `NXDOMAIN`; por tanto, no se encontró un registro DNS A para ese nombre en los resolvers consultados.
@@ -248,7 +261,7 @@ La modificación de `/etc/hosts` sólo corrige la resolución local en `pruebas`
 | Gitea Packages en `app.ini` y entorno | Confirmado habilitado |
 | Salud HTTP de Gitea desde el host | HTTP 200 |
 | Proxy local y virtual host de Gitea | HTTP 301 / HTTPS 200 |
-| Endpoint Registry local `/v2/` | HTTP 401 esperado sin autenticación |
+| Endpoint Registry local `/v2/` | HTTP 401 esperado sin autenticación; desafío Bearer `container_registry` confirmado por hostname |
 | Resolución de `git.infra.encit.unam.mx` en `pruebas` | Corregida localmente: `/etc/hosts` apunta a `10.129.100.2`; `getent` verificado |
 | IP WAN de OPNsense para publicación de producción | `132.247.168.166` (NAT hacia `10.129.101.2`; no corresponde a Gitea) |
 | Registro/override DNS interno para otros equipos | Pendiente; destino previsto `10.129.100.2`; no se modificó OPNsense |
