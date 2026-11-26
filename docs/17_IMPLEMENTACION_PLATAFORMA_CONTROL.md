@@ -529,3 +529,18 @@ El repositorio privado `encit/revista` fue inicializado y publicado correctament
 - La salida de `git ls-tree --name-only HEAD` confirmó ambos archivos y el `git push origin main` confirmó la creación de la rama remota.
 
 La identidad de Git se configuró localmente en este repositorio; no se cambió la configuración global del host. El repositorio ya no está vacío. El siguiente paso es inspeccionar su árbol y contenido antes de incorporar Dockerfile, Compose, Jenkinsfile o código OJS. No se ha desplegado OJS.
+
+
+## 15. Estado de la copia de trabajo del repositorio de Revista Xitle en TEST (26-nov-2026)
+
+El repositorio remoto privado `encit/revista` ya fue inicializado en Gitea (rama `main`, commit inicial `9d1f0ce`, archivos `README.md` y `.gitignore`). Sin embargo, **aún no existe una copia Git clonada y verificada en el host `pruebas`**.
+
+En la inspección de sólo lectura se localizaron tres directorios:
+
+- `/home/administrador/encit_arquitectura_institucional/repos/revista`: no se encontró `.git`; no es una copia Git verificada.
+- `/srv/encit/apps/revista`: ruta localizada, contenido y propósito aún no inspeccionados.
+- `/srv/encit/backups/revista`: ruta localizada, contenido y propósito aún no inspeccionados.
+
+El usuario confirmó expresamente que todavía no ha clonado el repositorio en TEST. Por tanto, no se debe asumir que el repositorio remoto está disponible como working tree local. Tampoco debe crearse o clonarse encima de alguna ruta candidata sin inspeccionar primero su contenido y acordar el destino.
+
+**Pendiente:** inspeccionar de forma no destructiva las rutas candidatas, definir una ubicación de trabajo y clonar allí el repositorio remoto. Después verificar rama, SHA, estado limpio y archivos. No se ha desplegado OJS.
