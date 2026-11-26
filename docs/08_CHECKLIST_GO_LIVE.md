@@ -116,3 +116,18 @@
 - [ ] Diseñar e implementar el Jenkinsfile versionado para CI/CD de OJS/Xitle.
 
 La eliminación de los jobs temporales no elimina el paquete remoto `jenkins/registry-smoke-test:smoke-1` que se publicó durante la prueba de Registry; su limpieza se mantiene como decisión independiente.
+
+
+### Diseño CI/CD de Revista Xitle (26-nov-2026)
+
+- [x] Definir arquitectura objetivo build once/promote many, digest OCI inmutable, separación TEST/PROD, aprobación manual y rollback (ver `docs/18_DISENO_CICD_XITLE_OJS.md`).
+- [x] Documentar etapas, contrato de imagen, controles de seguridad y decisiones pendientes.
+- [ ] Inspeccionar estructura real de `repos/revista`, Dockerfile, Compose, scripts, versión OJS y plugins.
+- [ ] Definir namespace definitivo de imagen en Gitea y permisos mínimos.
+- [ ] Validar método de despliegue remoto Jenkins → TEST/PROD y host keys.
+- [ ] Implementar Jenkinsfile desde SCM y validar primero build/test/push.
+- [ ] Implementar y probar despliegue TEST y smoke tests.
+- [ ] Ensayar backup/restauración y rollback de OJS/MariaDB/archivos.
+- [ ] Añadir aprobación manual y promoción del mismo digest a PROD.
+
+El documento describe una arquitectura propuesta; no implica que exista ya un Jenkinsfile, job productivo, Compose OJS funcional o conectividad SSH validada.
