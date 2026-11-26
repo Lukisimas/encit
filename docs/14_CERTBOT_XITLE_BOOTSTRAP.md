@@ -168,3 +168,25 @@ El administrador confirmó en el host de producción:
 - Los directorios `/srv/encit`, `/srv/encit/platform` y `/data/encit` todavía no existen, consistente con el estado previo al bootstrap; el script contempla crearlos.
 
 **Conclusión:** montaje y estado inicial de rutas/red son compatibles con la ejecución prevista del bootstrap. La red y los directorios no se crearon manualmente. No se ha ejecutado todavía el script ni se han iniciado servicios.
+
+
+### Corrección del bootstrap: creación de directorios de respaldos
+
+**Fecha:** 26 de noviembre de 2026.
+
+Durante la ejecución manual del bootstrap en producción, el administrador reportó:
+
+`install: missing destination file operand after '/data/encit/backups/web/prod'`.
+
+La inspección del bloque correspondiente identificó que el comando usaba `install` sin la opción `-d`. En ese modo, `install` espera un archivo de origen y un destino; para crear un directorio con propietario, grupo y modo debe utilizarse `install -d`.
+
+Se corrigió `repos/infrastructure/bootstrap/prepare-production-host.sh` en la rama `docs/storage-xitle-hostnames`:
+
+```bash
+install -d -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" -m 0700 \\
+  "$DATA_ROOT/backups/$app/prod"
+```
+
+La corrección quedó registrada en el commit `33c541a67652664dbfffc1b396d342104832d3e4`.
+
+**Estado de producción:** la ejecución anterior se interrumpió al encontrar el error. No asumir que el bootstrap terminó ni que todos los directorios/red quedaron creados. Antes de reintentar, actualizar la copia del repositorio en producción a este commit y revisar el estado parcial de las rutas. El administrador ejecutará manualmente el script actualizado. No se ejecutó ningún comando remoto ni se modificó el servidor desde esta actualización documental.
