@@ -48,10 +48,10 @@ Los datos de red describen la infraestructura documentada. Cualquier cambio de r
 
 | ID | Decisión propuesta | Motivo / condición |
 |---|---|---|
-| ADR-XTL-01 | Adoptar la línea OJS 3.5.x, fijando el último parche estable disponible al construir | Línea LTS con mantenimiento activo; nunca usar `latest` |
+| ADR-XTL-01 | Adoptar OJS 3.5.x; objetivo inicial de paquete 3.5.0-6, sujeto a confirmar descarga oficial y checksum | Línea LTS con mantenimiento activo; el hito 3.5.0-6 figura completado; nunca usar `latest` |
 | ADR-XTL-02 | Construir una imagen propia desde el paquete oficial de distribución PKP | Controlar PHP, extensiones, Apache, permisos y procedencia |
 | ADR-XTL-03 | Apache + PHP en el contenedor web de OJS | OJS soporta Apache; reduce la complejidad frente a PHP-FPM más otro servidor web interno |
-| ADR-XTL-04 | Base de datos lógica y credenciales dedicadas por entorno; evaluar primero el MySQL institucional existente en PROD | Reutilizar el servicio MySQL si su versión exacta cumple los requisitos PKP y puede aislarse; si no, desplegar MariaDB compatible |
+| ADR-XTL-04 | MariaDB 11.8 LTS dedicada para OJS, con base y credenciales independientes por entorno | En el inventario de PROD del 21-nov-2026 no se encontró una instancia MySQL confirmada; evitar acoplar OJS a la base de otra aplicación |
 | ADR-XTL-05 | Archivos privados de OJS fuera del document root | Los manuscritos y documentos de revisión no deben ser descargables directamente |
 | ADR-XTL-06 | Nginx existente como proxy perimetral/reverse proxy | Reutilizar el punto de entrada institucional; TLS termina en PROD |
 | ADR-XTL-07 | TEST y PROD con Compose, redes, datos y secretos independientes | Evitar contaminación cruzada y permitir pruebas seguras |
@@ -85,7 +85,7 @@ OJS 3.5 requiere PHP 8.2 o posterior. La guía oficial de inicio de PKP señala 
 Propuesta inicial:
 
 - PHP 8.2 como mínimo de compatibilidad.
-- Evaluar PHP 8.3 como versión de runtime, sólo después de ejecutar `composer check-platform-reqs` y las pruebas funcionales con el paquete exacto.
+- PHP 8.3 como runtime objetivo inicial, sujeto a ejecutar `composer check-platform-reqs` y pruebas funcionales con OJS 3.5.0-6. Si alguna dependencia no supera las verificaciones, volver a PHP 8.2, manteniendo el mismo runtime en TEST y PROD.
 - Fijar la imagen base por versión y digest.
 - Mantener iguales PHP y extensiones en TEST y PROD.
 - Verificar por separado la configuración de PHP web y CLI: límites de memoria, tiempo de ejecución, tamaño de carga, zona horaria y extensiones.
@@ -94,25 +94,27 @@ No fijar aún valores de memoria o límites de carga: deben derivarse del tamañ
 
 ### 3.3 Base de datos
 
-OJS 3.5 admite MySQL 5.7.22+ y MariaDB 10.3+ según el README oficial del proyecto; también contempla PostgreSQL 9.5+. En la arquitectura ENCiT ya se contempla un servicio MySQL en producción, por lo que **no se debe desplegar automáticamente otro motor ni crear una segunda instancia antes de revisar el servicio existente**.
+**Decisión de diseño: MariaDB dedicada para OJS**, sin reutilizar una instancia compartida con otras aplicaciones.
 
-Decisión de diseño:
+Fundamento:
 
-1. Inspeccionar la versión exacta, configuración, capacidad, backups y política de mantenimiento del MySQL institucional previsto para PROD.
-2. Si cumple los requisitos de la versión fijada de OJS, se puede utilizar ese servicio creando una base de datos y usuario exclusivos para Xitle, con privilegios limitados. No compartir esquema, usuario ni credenciales con otras aplicaciones.
-3. Si el MySQL existente no cumple compatibilidad, aislamiento, capacidad o política operativa, desplegar MariaDB dedicado para OJS.
-4. TEST tendrá su propia base y credenciales; nunca conectará a la base productiva.
+- En la inspección de PROD del 21 de noviembre de 2026 no se encontraron contenedores Docker ni una instancia MySQL confirmada que pudiera reutilizarse.
+- OJS 3.5 admite MySQL 5.7.22+ o MariaDB 10.3+; por compatibilidad de plataforma MariaDB es una opción válida. La versión efectiva debe probarse con el paquete OJS fijado.
+- MariaDB 11.8 es una rama LTS mantenida. Al 26 de noviembre de 2026, la versión de mantenimiento publicada es **11.8.10**; la serie tiene mantenimiento comunitario anunciado hasta junio de 2028.
 
-MariaDB 10.11 LTS queda como alternativa candidata, no como versión ya seleccionada. La versión exacta del motor se fijará después de verificar la compatibilidad del paquete OJS elegido y ensayar backup/restauración.
+Parámetros propuestos:
 
-En cualquiera de las alternativas:
+- Producción: MariaDB **11.8.10**, fijada por tag exacto y digest de imagen.
+- TEST: misma versión y digest que PROD, pero instancia, volumen, base y credenciales propios.
+- Base de datos exclusiva `ojs_xitle` y usuario de aplicación exclusivo; no compartir credenciales ni esquemas.
+- InnoDB y juego de caracteres/collation compatibles con el instalador OJS 3.5. La configuración exacta se valida en TEST.
+- Sin publicación del puerto 3306 al host ni a redes externas.
+- Acceso sólo desde el contenedor OJS y desde procedimientos administrativos autorizados.
+- No usar la imagen `latest`; aplicar actualizaciones de mantenimiento tras pruebas en TEST.
 
-- Usar InnoDB y juego de caracteres/collation compatibles con la versión OJS.
-- No exponer el puerto de base de datos al host ni a redes externas.
-- Crear una base y un usuario exclusivos para OJS, con privilegios sólo sobre esa base.
-- Separar completamente TEST y PROD.
-- Documentar la versión del motor y el procedimiento de actualización antes del go-live.
+La serie 11.8 tiene un horizonte comunitario más corto que la serie 11.4 (junio de 2028 frente a mayo de 2029, según la política publicada por MariaDB Foundation). Se conserva 11.8 por continuidad con el diseño preliminar ya trabajado y porque es LTS vigente; la política de actualización debe contemplar reevaluar 11.4 antes de la puesta en producción si se prioriza extender el periodo de mantenimiento.
 
+Fuentes de compatibilidad y mantenimiento: README oficial de OJS y política de versiones de MariaDB Foundation. La compatibilidad definitiva se confirma con el paquete OJS descargado y las pruebas de instalación, migración y backup/restauración.
 ## 4. Arquitectura lógica
 
 ### 4.1 Diagrama
@@ -143,7 +145,7 @@ El diagrama es conceptual. No representa todavía redes Docker, puertos internos
 |---|---|---|
 | Host físico | `10.129.100.2` | `10.129.101.2` |
 | OJS web | Compose de prueba aislado | Compose de producción |
-| Base de datos | MariaDB TEST | MariaDB PROD |
+| Base de datos | MariaDB 11.8.10 TEST | MariaDB 11.8.10 PROD |
 | Archivos privados | Almacenamiento exclusivo TEST | Almacenamiento exclusivo PROD |
 | Configuración | Archivo local protegido TEST | Archivo local protegido PROD |
 | Proxy | Nombre interno de prueba por definir | Nginx de producción |
@@ -170,7 +172,7 @@ TEST comparte host físico con Gitea y Jenkins. Por ello debe ser un proyecto Co
 
 **Servicio `mariadb`**
 
-- Imagen oficial fijada por versión/digest.
+- Imagen oficial MariaDB 11.8.10 fijada también por digest OCI.
 - Volumen persistente exclusivo.
 - Healthcheck con herramienta de cliente incluida en la imagen.
 - Red privada compartida sólo con OJS.
@@ -243,7 +245,17 @@ La imagen contiene el código y las dependencias; los datos mutables viven fuera
 | Caché y temporales | Directorios escribibles; reconstruibles | No respaldar como fuente primaria |
 | Logs | stdout/stderr y sistema de logs del host | Acceso administrativo |
 
-La ruta exacta en disco no se fija en este diseño. Antes de elegirla se debe inspeccionar el almacenamiento montado en ambos hosts, capacidad libre, sistema de archivos, rendimiento, política de snapshots y respaldos. La arquitectura física de producción contempla un SSD de 480 GB y un HDD de 72 TB; como orientación, la base de datos y componentes sensibles a latencia deberían evaluarse para el SSD, mientras que `files_dir` y los archivos editoriales de gran tamaño podrían residir en el HDD. Esta asignación es una recomendación de diseño, no una ruta o montaje confirmado. En PROD se ha documentado un volumen `/data` montado; su uso para archivos de OJS es candidato, no una decisión cerrada hasta verificar qué disco lo respalda, capacidad, propósito y política de respaldo.
+La inspección de PROD del 21 de noviembre de 2026 confirmó: SSD RAID1 `/dev/sda2`, ext4, montado en `/`, con aproximadamente 392 GB libres; HDD RAID5 `/dev/sdb1`, ext4, montado persistentemente en `/data`, con aproximadamente 62 TB libres y prácticamente vacío (sólo `lost+found`). Docker utiliza `/var/lib/docker` en el SSD. Se adopta esta distribución lógica para PROD, sin crear aún los directorios:
+
+| Ruta propuesta | Contenido | Medio |
+|---|---|---|
+| `/srv/encit/data/revista/prod/mariadb` | Datos de MariaDB | SSD RAID1 |
+| `/srv/encit/data/revista/prod/config` | Configuración OJS protegida | SSD RAID1 |
+| `/srv/encit/data/revista/prod/cache` | Caché de OJS | SSD RAID1 |
+| `/data/encit/data/revista/prod/files` | `files_dir` privado, fuera del document root | HDD RAID5 |
+| `/data/encit/data/revista/prod/public` | Recursos públicos persistentes de OJS | HDD RAID5 |
+
+Estas rutas son el diseño objetivo, no directorios cuya existencia se haya comprobado ni que se hayan creado. Antes de implementarlas se validarán permisos, propietario/UID de la imagen, capacidad y montaje real. No guardar `files_dir` dentro del document root. El HDD local no constituye por sí solo un backup: las copias de recuperación deberán tener una segunda ubicación independiente del host y de sus discos.
 
 No guardar `files_dir` dentro del directorio público ni dentro de la imagen. Los documentos de envío, revisión y producción editorial pueden contener información no publicada y deben quedar fuera del document root.
 
@@ -429,16 +441,26 @@ No liberar una actualización que modifique el esquema sin respaldo previo y pro
 
 ## 14. Capacidad y almacenamiento
 
-No se asignan todavía CPU, RAM, tamaño de volúmenes ni límites de carga: faltan métricas de uso editorial y capacidad efectiva de los discos.
+### PROD — inventario confirmado
 
-Antes de crear volúmenes:
+- SSD RAID1: `/dev/sda2`, ext4, montado en `/`, aproximadamente 392 GB libres; Docker Root Dir en `/var/lib/docker`.
+- HDD RAID5: `/dev/sdb1`, ext4, montado en `/data`, aproximadamente 62 TB libres; montaje persistente por UUID.
+- No se encontraron contenedores Docker en el inventario del 21-nov-2026.
 
-- Inventariar discos, montajes, capacidad libre, IOPS aproximadas y política de respaldo en TEST y PROD.
-- Determinar dónde residirán los datos de MariaDB y los archivos editoriales.
-- Priorizar baja latencia y protección para la base de datos.
-- Dimensionar el almacenamiento de archivos según manuscritos, galeras, PDFs, imágenes y crecimiento esperado.
+La distribución de rutas propuesta para OJS se detalla en la sección 7. La base de datos y configuración se ubican en SSD; archivos privados y públicos editoriales en HDD.
+
+### TEST — información pendiente
+
+El inventario de TEST confirma las redes Docker y los servicios de la plataforma de control, pero no hay evidencia suficiente de discos físicos, RAID, filesystem, capacidad libre, montajes o Docker Root Dir. Por tanto, no se deben crear todavía rutas de persistencia ni asignar cuotas en ese host. Antes de implementar OJS TEST se requiere una inspección de sólo lectura de almacenamiento y capacidad.
+
+### Dimensionamiento
+
+No se asignan todavía CPU, RAM, límites de carga ni cuotas: faltan métricas de uso editorial. Antes de crear volúmenes:
+
+- Medir capacidad, IOPS aproximadas y política de respaldo en ambos hosts.
+- Dimensionar archivos según manuscritos, galeras, PDFs, imágenes y crecimiento esperado.
 - Definir umbrales de alerta y margen de crecimiento.
-- No confundir espacio libre en un disco de gran capacidad con un backup independiente.
+- No confundir espacio libre en el HDD local con un backup independiente.
 
 ## 15. Pruebas de aceptación
 
@@ -500,9 +522,9 @@ Cada fase debe documentarse con evidencia y no se marcará como implementada por
 
 | Tema | Riesgo | Evidencia/decisión requerida |
 |---|---|---|
-| Parche exacto OJS | Instalar versión desactualizada | Confirmar última descarga estable PKP al construir |
-| PHP 8.3 vs 8.2 | Incompatibilidad de extensiones/plugins | Pruebas de plataforma y funcionales |
-| MariaDB 10.11 | Compatibilidad y ciclo de soporte | Validar versión exacta contra OJS y política de mantenimiento |
+| Parche exacto OJS | Instalar versión desactualizada | Objetivo 3.5.0-6; confirmar paquete oficial y checksum antes de construir |
+| PHP 8.3 vs 8.2 | Incompatibilidad de extensiones/plugins | PHP 8.3 objetivo; ejecutar Composer platform check y pruebas en TEST |
+| MariaDB 11.8.10 | Compatibilidad y ciclo de soporte | Versión propuesta; validar con OJS 3.5.0-6 y revisar horizonte LTS antes de PROD |
 | Scheduler OJS 3.5 | Tareas editoriales no ejecutadas o duplicadas | Confirmar mecanismo oficial para release fijado |
 | Almacenamiento PROD | Pérdida/insuficiencia de espacio | Inspección de montajes y capacidad |
 | Host compartido TEST | Builds afectan pruebas | Límites de recursos y ventana de build |
@@ -532,8 +554,11 @@ Consultar estas fuentes al construir y actualizar. Las versiones y requisitos pu
 
 **26 de noviembre de 2026 — Primera versión del diseño técnico**
 
-- Se establece OJS 3.5.x como línea recomendada, pendiente de fijar el parche exacto.
-- Se define la arquitectura objetivo Apache/PHP + MariaDB, proxy Nginx y persistencia separada.
+- Se establece OJS 3.5.x con objetivo de paquete 3.5.0-6, pendiente de comprobar descarga oficial y checksum.
+- Se propone PHP 8.3, condicionado a Composer platform check y pruebas funcionales.
+- Se adopta MariaDB 11.8.10 como versión candidata fijada por tag/digest, con bases separadas en TEST y PROD.
+- Se documentan rutas objetivo de persistencia PROD sobre SSD RAID1 y HDD RAID5; no se han creado.
+- TEST requiere inventario de almacenamiento antes de definir rutas persistentes.
 - Se separan claramente TEST y PROD.
 - Se establece que el repositorio Gitea contiene únicamente su inicialización y que la implementación OJS no existe todavía.
 - Se define que clonar el repositorio será una actividad de implementación posterior, no un requisito para diseñar la arquitectura.
