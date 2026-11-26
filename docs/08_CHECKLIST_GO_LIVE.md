@@ -31,6 +31,8 @@
 - [x] Ejecutar manualmente `repos/infrastructure/bootstrap/prepare-production-host.sh` como root; el administrador reportó el mensaje final esperado sin errores.
 - [x] Verificar directorios, propietarios/permisos y red `encit_prod_edge` tras el bootstrap; directorios y modos coinciden con el diseño. Pendiente revisar solapamiento de la subred Docker `172.18.0.0/16` con rutas institucionales/VPN.
 - [ ] Variables de producción preparadas fuera de Git.
+- [x] Inventario Docker del host DEV/TEST documentado en `docs/16_VALIDACION_DOCKER_DEVTEST.md`; no se encontraron imágenes/containers OJS ni MariaDB locales. Pendiente identificar el pipeline y tag probado.
+- [ ] Resolver la duplicación de subred `172.18.0.0/16` entre `encit_control_edge` (DEV/TEST) y `encit_prod_edge` (PROD), según el modelo de conectividad requerido.
 - [ ] Imagen OJS identificada por tag probado en TEST.
 - [ ] MariaDB inicia y supera healthcheck.
 - [ ] OJS responde correctamente detrás del proxy.
