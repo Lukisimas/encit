@@ -104,15 +104,11 @@ La versión Java no quedó confirmada: el comando de inspección terminó con er
 
 ## 4. Jobs y estado inicial de Jenkins
 
-El inventario del directorio de Jenkins reportó un único job:
+El inventario inicial del directorio de Jenkins reportó un único job: `prueba-gitea`. La inspección de sólo lectura del XML confirmó que era un job Pipeline (`flow-definition`) con definición `CpsFlowDefinition` y un script inline de 14 líneas, sin SCM, triggers, builders ni publishers declarados.
 
-- `prueba-gitea`
+El job fue creado únicamente como prueba puntual de comunicación entre Jenkins y Gitea; no era un pipeline de despliegue ni evidencia de checkout automatizado, uso de un `Jenkinsfile` desde un repositorio, construcción de imágenes o publicación al Container Registry. **Actualización del 26 de noviembre de 2026:** el job fue eliminado junto con los demás trabajos temporales, según el inventario y la limpieza documentados en la sección 12.
 
-La inspección de sólo lectura del XML confirmó que `prueba-gitea` es un job Pipeline (`flow-definition`) con definición `CpsFlowDefinition` y un script inline de 14 líneas. No tiene SCM configurado, bloque de triggers, builders ni publishers declarados en el XML inspeccionado.
-
-El job fue creado únicamente como prueba puntual de comunicación entre Jenkins y Gitea. No es un pipeline de despliegue ni debe interpretarse como evidencia de checkout automatizado, uso de un `Jenkinsfile` desde un repositorio, construcción de imágenes o publicación al Container Registry. Se conserva como antecedente de la prueba; no se modificó ni eliminó.
-
-No se deben inferir pipelines de OJS a partir de la existencia de este job. La integración funcional para CI/CD y el pipeline de construcción/publicación de OJS permanecen pendientes de diseño e inspección.
+No se deben inferir pipelines de OJS a partir de estos jobs de prueba. El pipeline real de construcción/publicación y despliegue de OJS permanece pendiente de diseño e implementación.
 
 ## 5. Reverse proxy y certificados
 
@@ -187,7 +183,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 | Jenkins con Docker CLI y JDK 21 | Declarado en Dockerfile |
 | Docker-in-Docker con TLS y volumen persistente | Declarado; montajes observados |
 | CA institucional montada en Jenkins y DinD | Montajes observados |
-| Job `prueba-gitea` | Pipeline inline de prueba, 14 líneas; sin SCM ni triggers; no es pipeline de despliegue |
+| Jobs temporales de Jenkins | Se eliminaron los seis jobs de prueba; verificación final: cero `WorkflowJob` restantes |
 | Integración funcional Jenkins–Gitea | Pendiente |
 | Login y push/pull del Container Registry | Pendiente |
 | Pipeline y tag OJS probados en TEST | Pendiente |
@@ -470,3 +466,31 @@ La imagen de prueba quedó publicada en Gitea como paquete remoto. El Pipeline e
 Quedan confirmadas la resolución DNS interna desde Jenkins y desde Docker-in-Docker, la confianza TLS desde Jenkins, la consulta API autenticada y las operaciones de autenticación, publicación y descarga del Container Registry. Esto valida el canal técnico Jenkins → Gitea Packages para imágenes de prueba; todavía no valida un pipeline de OJS, la promoción de imágenes entre TEST y PROD, ni el despliegue de Xitle.
 
 La advertencia de Docker sobre almacenamiento no cifrado en el `config.json` temporal apareció durante `docker login`. El Pipeline usó un directorio temporal `DOCKER_CONFIG` y una limpieza `trap` al finalizar; no se mostró el token. También apareció el aviso deprecando el legacy builder; la construcción terminó correctamente. La adopción de BuildKit/buildx puede planearse por separado.
+
+
+## 12. Inventario y eliminación de jobs temporales de Jenkins
+
+**Fecha:** 26 de noviembre de 2026  
+**Host:** plataforma de control en `pruebas`  
+**Interfaz utilizada:** Manage Jenkins → Script Console
+
+Se ejecutó primero un inventario de sólo lectura de todos los elementos `Job` de Jenkins. El resultado mostró exactamente seis jobs, todos de tipo `WorkflowJob`, habilitados:
+
+| Job | Tipo | Estado antes de la limpieza |
+|---|---|---|
+| `gitea-api-auth-test` | `WorkflowJob` | Habilitado |
+| `gitea-connectivity-test` | `WorkflowJob` | Habilitado |
+| `gitea-healthcheck` | `WorkflowJob` | Habilitado |
+| `gitea-registry-login-test` | `WorkflowJob` | Habilitado |
+| `gitea-registry-smoke-test` | `WorkflowJob` | Habilitado |
+| `prueba-gitea` | `WorkflowJob` | Habilitado |
+
+El administrador autorizó eliminar todos los trabajos de prueba. Se ejecutó la eliminación explícita de los seis nombres anteriores y Jenkins confirmó individualmente cada operación con `ELIMINADO=`. La verificación final reportó:
+
+- `TOTAL_WORKFLOW_JOBS_RESTANTES=0`.
+- Los seis jobs inventariados fueron eliminados.
+- No se reportaron errores en la salida compartida.
+
+**Alcance:** esta limpieza afectó únicamente los seis jobs Pipeline de prueba enumerados. No se eliminaron credenciales de Jenkins, configuración global, contenedores, repositorios ni paquetes del Container Registry. En particular, la imagen temporal `jenkins/registry-smoke-test:smoke-1` publicada en Gitea es un paquete remoto independiente y no forma parte de esta eliminación; su eventual limpieza debe decidirse por separado.
+
+**Estado operativo:** la fase de pruebas puntuales de integración Jenkins–Gitea concluyó y sus jobs temporales fueron retirados. El pipeline CI/CD versionado para OJS/Xitle todavía debe diseñarse e implementarse; esta limpieza no equivale a desplegar ni retirar un pipeline productivo.
