@@ -208,7 +208,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 **Conclusión:** la primera plataforma común de control ya está desplegada en el host de pruebas y el repositorio contiene su definición: Gitea/PostgreSQL, Jenkins, Docker-in-Docker, Nginx y Mailpit. Gitea Packages está habilitado en la configuración versionada, por lo que el Container Registry forma parte del diseño. Todavía no hay evidencia suficiente para afirmar que Jenkins consume Gitea, construye imágenes OJS o publica tags utilizables por producción. La siguiente fase debe validar esas integraciones y adaptar las ACL antes de usar la plataforma para el ciclo de promoción de Xitle.
 
 
-## 11. Validación HTTP del Container Registry y discrepancia DNS
+## 11. Validación HTTP del Container Registry y resolución interna
 
 **Fecha:** 26 de noviembre de 2026  
 **Host de origen:** `pruebas` — `10.129.100.2/28`
@@ -231,17 +231,15 @@ Ambos valores coinciden. Gitea Packages está habilitado en la configuración ef
 - El endpoint `https://git.infra.encit.unam.mx/v2/`, forzado al proxy local, respondió `HTTP 401`. Esta respuesta es esperada sin autenticación y confirma que el endpoint Registry responde.
 - La misma URL por resolución habitual no conectó y agotó el tiempo de espera.
 
-### Discrepancia de resolución DNS
+### Resolución interna y direccionamiento correcto
 
-En una primera consulta, `getent ahosts git.infra.encit.unam.mx` devolvió `132.247.168.160`. La ruta observada para esa dirección es la ruta predeterminada vía `10.129.100.1`, interfaz `eno1`, origen `10.129.100.2`.
+El diagnóstico inicial encontró en `/etc/hosts` del host `pruebas` una entrada explícita que asociaba `git.infra.encit.unam.mx` con `132.247.168.160`. Las consultas A directas a los DNS institucionales `132.248.10.2` y `132.248.204.1`, y como referencia a `1.1.1.1` y `8.8.8.8`, devolvieron `NXDOMAIN`; por tanto, no se encontró un registro DNS A para ese nombre en los resolvers consultados.
 
-El administrador confirma que la IP WAN correcta de OPNsense es **`132.247.168.166`**. La revisión posterior de NSS mostró `hosts: files dns` y encontró en `/etc/hosts` del host `pruebas` la entrada explícita `132.247.168.160 git.infra.encit.unam.mx`. Por precedencia, esa entrada local explica la respuesta de `getent`; no era evidencia de un registro DNS con esa dirección.
+Se corrigió la entrada local de `/etc/hosts` en `pruebas` para que `git.infra.encit.unam.mx` apunte a **`10.129.100.2`**, dirección del propio servidor de pruebas donde se ejecutan Gitea y el proxy Nginx. La salida posterior de `getent ahostsv4 git.infra.encit.unam.mx` confirmó `10.129.100.2` para STREAM, DGRAM y RAW.
 
-Las consultas directas del registro A a los DNS institucionales `132.248.10.2` y `132.248.204.1`, y como referencia a `1.1.1.1` y `8.8.8.8`, devolvieron `NXDOMAIN`. Por tanto, en el momento de la prueba no se encontró un registro DNS A para el nombre consultado. Esto no demuestra que deba publicarse: el nombre pertenece a la infraestructura interna y no se debe crear un registro público sin decisión expresa.
+**Aclaración de direccionamiento:** `132.247.168.166` es la IP WAN de OPNsense utilizada para la publicación de los servicios de producción, cuyo servidor es `10.129.101.2`. No es la dirección de Gitea. El hostname interno `git.infra.encit.unam.mx` debe llegar al servidor de pruebas `10.129.100.2`; no debe enviarse a la IP WAN de producción.
 
-**Corrección local aplicada y verificada:** el administrador actualizó únicamente la entrada correspondiente en `/etc/hosts` de `pruebas`, sustituyendo `132.247.168.160` por `132.247.168.166`. La salida posterior de `getent ahostsv4 git.infra.encit.unam.mx` devolvió `132.247.168.166` para STREAM, DGRAM y RAW. La resolución local en este host queda corregida.
-
-Esta modificación no crea un registro DNS ni cambia OPNsense. Las consultas A directas a los dos DNS institucionales y, como referencia, a Cloudflare y Google devolvieron `NXDOMAIN`; por ello, los demás equipos no obtendrán el nombre mediante esos resolvers mientras no exista un registro/override DNS interno apropiado. No publicar el hostname de infraestructura en DNS público.
+La modificación de `/etc/hosts` sólo corrige la resolución local en `pruebas`; no crea un registro DNS ni cambia OPNsense. Para que otros equipos autorizados resuelvan el nombre se deberá definir un registro/override DNS interno hacia `10.129.100.2`. No publicar el hostname de infraestructura en DNS público.
 
 ### Estado actualizado
 
@@ -251,7 +249,7 @@ Esta modificación no crea un registro DNS ni cambia OPNsense. Las consultas A d
 | Salud HTTP de Gitea desde el host | HTTP 200 |
 | Proxy local y virtual host de Gitea | HTTP 301 / HTTPS 200 |
 | Endpoint Registry local `/v2/` | HTTP 401 esperado sin autenticación |
-| Resolución de `git.infra.encit.unam.mx` en `pruebas` | Corregida localmente: `/etc/hosts` apunta a `132.247.168.166`; `getent` verificado |
-| IP WAN correcta confirmada por el administrador | `132.247.168.166` |
-| Registro/override DNS interno para otros equipos | Pendiente; consultas institucionales y públicas devuelven `NXDOMAIN`; no se modificó OPNsense |
+| Resolución de `git.infra.encit.unam.mx` en `pruebas` | Corregida localmente: `/etc/hosts` apunta a `10.129.100.2`; `getent` verificado |
+| IP WAN de OPNsense para publicación de producción | `132.247.168.166` (NAT hacia `10.129.101.2`; no corresponde a Gitea) |
+| Registro/override DNS interno para otros equipos | Pendiente; destino previsto `10.129.100.2`; no se modificó OPNsense |
 | Login, push y pull autenticados | Pendientes |
