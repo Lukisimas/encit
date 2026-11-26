@@ -4,7 +4,7 @@
 
 - [ ] DNS interno del equipo perimetral resuelve DEV/TEST/INFRA correctamente.
 - [x] Registro DNS público A de `xitle.encit.unam.mx` creado y apuntando a `132.247.168.166` (confirmado por el administrador).
-- [ ] Resolución A de Xitle comprobada desde resolvers públicos y evidencia registrada.
+- [ ] Resolución A de Xitle comprobada desde resolvers públicos y evidencia registrada (intento desde el entorno de trabajo no concluyente; ver `docs/15_VALIDACION_PUBLICA_XITLE.md`).
 - [ ] Registro AAAA ausente o, si existe, IPv6 probado de extremo a extremo.
 - [ ] NAT TCP/80 y TCP/443 de OPNsense dirigido a producción (`10.129.101.2`).
 - [ ] Reglas de firewall WAN permiten HTTP/HTTPS conforme al NAT.
