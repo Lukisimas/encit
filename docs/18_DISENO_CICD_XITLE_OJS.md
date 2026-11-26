@@ -271,3 +271,15 @@ El repositorio existe y el administrador puede abrirlo desde la interfaz autenti
 **Estado de inicialización:** no se observa todavía `README.md`; se acordó incorporar `README.md` y `.gitignore` desde el primer commit de contenido. Hasta que se agreguen, no hay evidencia de Dockerfile, Compose, código OJS, plugins ni Jenkinsfile en este repositorio.
 
 Por tanto, el paso de inspección de estructura real se encuentra bloqueado hasta inicializar el repositorio. El siguiente paso es añadir esos dos archivos en `main`, verificar el commit y después inspeccionar el árbol. La estructura objetivo descrita en la sección 4 sigue siendo una propuesta, no un inventario.
+
+
+## Estado del repositorio de aplicación tras su inicialización (26-nov-2026)
+
+El repositorio privado Gitea `encit/revista` ya no está vacío. Se publicó en la rama `main` el commit inicial `9d1f0ce` (`docs: inicializar repositorio de Revista Xitle`), con autoría institucional de Alan Uriel Gil Casas (`alan.gil@encit.unam.mx`). El commit contiene únicamente:
+
+- `README.md`: propósito, alcance previsto, entornos y principios operativos.
+- `.gitignore`: exclusiones iniciales para secretos, configuración local, datos persistentes, artefactos y dependencias.
+
+La identidad de Git se configuró localmente dentro del repositorio, sin alterar la configuración global del host.
+
+Este hito sólo inicializa el control de versiones. No constituye una implementación de OJS. Antes de definir Dockerfile, Compose, Jenkinsfile, plugins o estrategia de persistencia, debe inspeccionarse el contenido real y acordarse la versión y arquitectura de OJS.
