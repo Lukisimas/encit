@@ -233,11 +233,13 @@ Ambos valores coinciden. Gitea Packages está habilitado en la configuración ef
 
 ### Discrepancia de resolución DNS
 
-En el host `pruebas`, `getent ahosts git.infra.encit.unam.mx` devolvió `132.247.168.160`. La ruta observada para esa dirección es la ruta predeterminada vía `10.129.100.1`, interfaz `eno1`, origen `10.129.100.2`.
+En una primera consulta, `getent ahosts git.infra.encit.unam.mx` devolvió `132.247.168.160`. La ruta observada para esa dirección es la ruta predeterminada vía `10.129.100.1`, interfaz `eno1`, origen `10.129.100.2`.
 
-El administrador confirma que la IP WAN correcta de OPNsense es **`132.247.168.166`**. La resolución observada de `git.infra.encit.unam.mx` a `132.247.168.160` es incorrecta y debe corregirse en el origen DNS que atiende al host (DNS interno/override o registro autoritativo correspondiente). No se modificó DNS, OPNsense, Nginx ni el servidor durante estas pruebas; este repositorio no administra directamente los registros DNS.
+El administrador confirma que la IP WAN correcta de OPNsense es **`132.247.168.166`**. La revisión posterior de NSS mostró `hosts: files dns` y encontró en `/etc/hosts` del host `pruebas` la entrada explícita `132.247.168.160 git.infra.encit.unam.mx`. Por precedencia, esa entrada local explica la respuesta de `getent`; no era evidencia de un registro DNS con esa dirección.
 
-**Conclusión:** Gitea y el endpoint Registry funcionan por la ruta local. La prueba por hostname está bloqueada por la discrepancia DNS/ruta asociada a la dirección `132.247.168.160`; no es evidencia de un fallo de Gitea. La corrección DNS a `132.247.168.166` y su posterior verificación quedan pendientes.
+Las consultas directas del registro A a los DNS institucionales `132.248.10.2` y `132.248.204.1`, y como referencia a `1.1.1.1` y `8.8.8.8`, devolvieron `NXDOMAIN`. Por tanto, en el momento de la prueba no se encontró un registro DNS A para el nombre consultado. Esto no demuestra que deba publicarse: el nombre pertenece a la infraestructura interna y no se debe crear un registro público sin decisión expresa.
+
+**Corrección local pendiente de confirmar:** sustituir únicamente la entrada de `/etc/hosts` en `pruebas` para que apunte a `132.247.168.166`, y verificar con `getent`. Esta corrección local no crea un registro DNS ni cambia OPNsense. Después se debe decidir si el nombre requiere un override DNS interno para los demás equipos autorizados.
 
 ### Estado actualizado
 
