@@ -182,3 +182,18 @@ Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. 
 - [ ] Preparar PROD y promover el mismo digest con autorización explícita.
 
 **Estado:** el diseño técnico está documentado, pero no está implementado. El repositorio remoto contiene únicamente su inicialización. No hay instalación OJS ni despliegue de Xitle confirmado.
+
+
+### Revisión de base de datos y almacenamiento (26-nov-2026)
+
+- [x] Descartar reutilización de un MySQL de PROD: no se encontró una instancia confirmada en el inventario disponible.
+- [x] Adoptar MariaDB 11.8.10 dedicada como versión candidata, fijada por tag/digest; validar OJS 3.5.0-6 y backup/restauración en TEST.
+- [x] Definir distribución de persistencia PROD: MariaDB/config/cache en SSD RAID1; `files_dir` y `public` en HDD RAID5.
+- [x] Documentar rutas objetivo PROD sin crearlas.
+- [x] Incorporar redes Docker existentes de TEST y aislar la base de datos de la red de borde.
+- [ ] Inspeccionar almacenamiento de TEST (discos, RAID, filesystem, capacidad, montajes y Docker Root Dir) antes de fijar rutas OJS.
+- [ ] Validar UID/GID y permisos de la imagen MariaDB y del proceso PHP antes de crear directorios persistentes.
+- [ ] Definir destino de backup independiente del host PROD y ensayar restauración integral DB + archivos.
+- [ ] Confirmar paquete oficial OJS 3.5.0-6, checksum y PHP 8.3 mediante pruebas de plataforma.
+
+**Nota:** los inventarios de PROD corresponden a la inspección del 21-nov-2026. Los directorios indicados son rutas objetivo de diseño, no rutas creadas en el servidor.
