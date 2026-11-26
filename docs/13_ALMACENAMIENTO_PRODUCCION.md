@@ -68,3 +68,26 @@ Los directorios se crean inicialmente con permisos restrictivos. Antes de desple
 ## Respaldos y recuperación
 
 RAID protege disponibilidad ante ciertas fallas físicas; no protege contra borrado, corrupción lógica, ransomware, errores administrativos ni pérdida del servidor. Mantener una copia externa, verificar checksums y probar restauraciones en TEST. Consultar [Respaldos](06_RESPALDOS.md).
+
+
+## Confirmación del layout de bloques
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Equipo:** servidor de producción  
+**Comando ejecutado:** `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS,MODEL`.
+
+El administrador compartió el siguiente inventario:
+
+```text
+NAME     SIZE TYPE FSTYPE MOUNTPOINTS MODEL
+sda    446.6G disk                    MR416i-p Gen11
+├─sda1   976M part vfat   /boot/efi
+├─sda2 422.6G part ext4   /
+└─sda3    23G part swap   [SWAP]
+sdb     65.5T disk                    MR408i-o Gen11
+└─sdb1  65.5T part ext4   /data
+```
+
+**Evaluación:** la salida confirma el layout esperado y coincide con el inventario y la distribución de almacenamiento descritos anteriormente: el logical drive SSD de la controladora MR416i-p contiene EFI, raíz ext4 y swap; el logical drive HDD de la MR408i-o contiene una partición ext4 montada en `/data`. No se solicitó ni realizó una nueva prueba de RAID, filesystem, UUID o montaje; esas validaciones ya están descritas en este documento.
+
+**Estado:** layout de bloques confirmado nuevamente. Se conserva la separación prevista: sistema, Docker y datos de baja latencia en SSD; archivos voluminosos y respaldos locales en `/data`. No se modificó particionado, filesystem, RAID ni `/etc/fstab`.
