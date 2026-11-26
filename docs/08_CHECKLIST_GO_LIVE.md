@@ -72,3 +72,17 @@
 - [ ] Prueba de correo.
 - [ ] Prueba de autenticación y roles.
 - [ ] Verificación de tareas programadas.
+
+
+### Jenkins: resolución interna de Gitea
+
+- [x] Diagnosticar desde el agente Jenkins `built-in`: el nombre `git.infra.encit.unam.mx` no resolvía; Docker DNS `127.0.0.11` reenviaba a DNS institucionales que no conocen el nombre interno.
+- [x] Confirmar que el host `pruebas` resuelve `git.infra.encit.unam.mx` a `10.129.100.2`.
+- [x] Añadir `extra_hosts: ["git.infra.encit.unam.mx:10.129.100.2"]` al servicio `jenkins` en `/srv/encit/platform/control/docker-compose.yml`.
+- [x] Validar sintaxis y configuración efectiva con `sudo docker compose config -q`; Compose muestra `git.infra.encit.unam.mx=10.129.100.2`.
+- [ ] Aplicar el cambio al contenedor Jenkins de forma controlada.
+- [ ] Verificar resolución desde el agente después de aplicar el cambio.
+- [ ] Validar TLS desde Jenkins sin `curl -k`.
+- [ ] Validar autenticación API de Gitea desde Jenkins sin exponer tokens en consola/logs.
+
+**Nota de estado:** la corrección está guardada y validada en el archivo Compose operativo, pero aún no se ha aplicado al contenedor en ejecución. La prueba API inicial no llegó a TLS ni autenticación por el fallo de resolución DNS. No se modificaron DNS institucionales ni OPNsense.
