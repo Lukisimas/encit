@@ -300,3 +300,18 @@ La primera ruta no contiene un directorio `.git`; por ello no es una copia Git v
 **Estado actual:** repositorio remoto disponible; clonación en TEST pendiente. No se ha inspeccionado todavía el contenido de trabajo en el host, ni se ha instalado/desplegado OJS. No crear, reutilizar ni sobrescribir contenido en las rutas encontradas sin inspeccionarlas y acordar previamente la ruta de clonación.
 
 **Siguiente paso:** revisar las rutas candidatas de forma no destructiva, elegir una ubicación de trabajo y clonar explícitamente `https://git.infra.encit.unam.mx/encit/revista.git` en la rama `main`. Después verificar `git status`, SHA de HEAD y árbol de archivos antes de continuar con el diseño de OJS.
+
+
+## 15. Referencia al diseño técnico vigente (26-nov-2026)
+
+El diseño integral de la aplicación está documentado ahora en [docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md](19_DISENO_TECNICO_REVISTA_XITLE_OJS.md). Ese documento es la referencia vigente para versión de OJS, PHP, MariaDB, contenedores, proxy, redes, persistencia, seguridad, operación y fases de implementación.
+
+Aclaraciones que sustituyen las instrucciones anteriores de esta nota:
+
+- El repositorio Gitea encit/revista está inicializado, pero **no contiene una implementación de OJS**. El contenido inicial es documental (README.md y .gitignore).
+- No se debe clonar el repositorio para inspeccionar una aplicación que todavía no existe. La clonación será el inicio de la fase de implementación, después de revisar/aprobar el diseño.
+- Las referencias anteriores a inspeccionar Dockerfiles, Compose, scripts, plugins o código OJS describían una hipótesis de trabajo, no archivos existentes.
+- No hay todavía Dockerfile, Compose OJS, Jenkinsfile de aplicación, imagen OJS, contenedor OJS ni base de datos OJS verificados.
+- El flujo build once/promote many, el digest OCI y la aprobación manual de PROD se mantienen como principios del CI/CD; su implementación depende de completar el diseño técnico y las fases de prueba.
+
+Esta aclaración prevalece sobre las secciones 13 y 14 anteriores cuando exista contradicción. No se hicieron cambios en los servidores ni se desplegó OJS.
