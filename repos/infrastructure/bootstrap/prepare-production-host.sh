@@ -73,7 +73,7 @@ for app in "${APPS[@]}"; do
   install -d -m 0750 "$DATA_ROOT/data/$app/prod"
   # Los pipelines Jenkins se conectan como deploy. 0700 evita que otros
   # usuarios lean respaldos; deploy puede crearlos y endurecerlos a 0700.
-  install -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" -m 0700 \
+  install -d -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" -m 0700 \
     "$DATA_ROOT/backups/$app/prod"
 done
 
