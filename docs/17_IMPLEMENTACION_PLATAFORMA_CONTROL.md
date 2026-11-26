@@ -494,3 +494,10 @@ El administrador autorizó eliminar todos los trabajos de prueba. Se ejecutó la
 **Alcance:** esta limpieza afectó únicamente los seis jobs Pipeline de prueba enumerados. No se eliminaron credenciales de Jenkins, configuración global, contenedores, repositorios ni paquetes del Container Registry. En particular, la imagen temporal `jenkins/registry-smoke-test:smoke-1` publicada en Gitea es un paquete remoto independiente y no forma parte de esta eliminación; su eventual limpieza debe decidirse por separado.
 
 **Estado operativo:** la fase de pruebas puntuales de integración Jenkins–Gitea concluyó y sus jobs temporales fueron retirados. El pipeline CI/CD versionado para OJS/Xitle todavía debe diseñarse e implementarse; esta limpieza no equivale a desplegar ni retirar un pipeline productivo.
+
+
+## 13. Diseño del pipeline CI/CD de Revista Xitle (OJS)
+
+El diseño detallado se documenta en [`docs/18_DISENO_CICD_XITLE_OJS.md`](18_DISENO_CICD_XITLE_OJS.md). Define el patrón build once/promote many, publicación por SHA y digest OCI, despliegue de TEST, aprobación humana para PROD, persistencia, seguridad y rollback.
+
+Este diseño es una especificación, no un Jenkinsfile ejecutable. Antes de implementarlo deben inspeccionarse los archivos reales de `repos/revista`, determinar el contexto Docker y las versiones de OJS/plugins, y validar la conectividad de despliegue remoto. La prueba de Registry con imagen temporal demuestra el canal de publicación, no la construcción ni el despliegue de OJS.
