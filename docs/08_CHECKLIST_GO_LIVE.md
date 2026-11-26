@@ -213,3 +213,18 @@ Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. 
 - [ ] Definir destino de backup independiente del host PROD y ensayar restauración integral DB + archivos.
 
 **Alcance de la validación:** inspección de solo lectura. No se crearon directorios ni contenedores; no se cambiaron propietarios/permisos ni se modificaron DNS, OPNsense, NAT o proxy.
+
+
+### Verificación de almacenamiento y redes de Revista Xitle (26-nov-2026)
+
+- [x] Inspeccionar disco, filesystem, capacidad, montajes y Docker Root Dir de TEST.
+- [x] Identificar el contenido existente de `/srv/encit/data` en TEST y confirmar que corresponde a Gitea/PostgreSQL/Jenkins; no existe aún ruta de persistencia Revista.
+- [x] Inspeccionar disco, filesystem, capacidad, montaje y UUID de SSD/HDD de PROD.
+- [x] Confirmar que las cinco rutas de persistencia PROD para MariaDB, configuración, caché, `files_dir` y `public` existen y están vacías.
+- [x] Inventariar redes Docker de TEST y confirmar `encit_prod_edge` en PROD.
+- [ ] Verificar disponibilidad y digest de las imágenes base exactas en TEST.
+- [ ] Inspeccionar UID/GID de MariaDB y del proceso web OJS en las imágenes fijadas.
+- [ ] Crear rutas persistentes de TEST sólo después de aprobar el diseño y el plan de implementación.
+- [ ] Validar propietarios/permisos efectivos de los volúmenes sin alterar todavía los directorios de PROD.
+
+La inspección de almacenamiento fue de solo lectura. Las rutas de PROD ya existían antes de esta verificación; las rutas TEST siguen siendo una propuesta y no se han creado. Este registro corrige las previsiones anteriores del checklist que aún indicaban que las rutas de PROD estaban pendientes de creación.
