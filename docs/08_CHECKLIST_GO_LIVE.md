@@ -28,7 +28,7 @@
 - [x] Persistencia de Gitea y Jenkins, volúmenes de Docker-in-Docker y montaje de CA institucional observados.
 - [x] Gitea Packages / Container Registry habilitado en el Compose versionado.
 - [x] Gitea Packages confirmado habilitado en `app.ini` y en `GITEA__packages__ENABLED` (ver `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`).
-- [ ] Corregir la resolución de `git.infra.encit.unam.mx`: el host `pruebas` obtiene `132.247.168.160`; la IP WAN correcta confirmada es `132.247.168.166`. Revisar el registro DNS interno/override correspondiente y volver a validar.
+- [ ] Confirmar la corrección de la entrada local en `/etc/hosts` de `pruebas`: se encontró `132.247.168.160` para `git.infra.encit.unam.mx`; debe apuntar a `132.247.168.166`. Los DNS institucionales y públicos consultados respondieron `NXDOMAIN`; decidir si se requiere un override DNS interno para los demás equipos, sin publicar el hostname de infraestructura.
 - [ ] Inspeccionar el job inicial `prueba-gitea` y validar checkout/ejecución desde Gitea.
 - [ ] Confirmar versión Java en runtime y conectividad TLS Jenkins → Docker-in-Docker.
 - [ ] Validar autenticación y publicación/descarga de prueba en Gitea Container Registry.
