@@ -109,3 +109,32 @@ Si la renovación falla, restaurar el proxy y revisar el error; no dejarlo deten
 - El vhost referencia el certificado en `/etc/letsencrypt/live/xitle.encit.unam.mx/`.
 - Emisión y renovación siguen siendo procedimientos manuales con interrupción breve.
 - No se ha ejecutado Certbot ni se ha instalado el certificado.
+
+
+## Auditoría del repositorio antes del primer despliegue
+
+**Fecha:** 26 de noviembre de 2026  
+**Rama revisada:** `docs/storage-xitle-hostnames`.
+
+Se inspeccionaron `repos/infrastructure/production/docker-compose.yml`, la configuración Nginx de producción, los virtual hosts, `repos/infrastructure/bootstrap/prepare-production-host.sh` y el stack OJS `repos/revista/deploy/production/`.
+
+### Configuración encontrada
+
+- El Compose de infraestructura define el servicio `proxy` con Nginx `1.30.4`, publica TCP/80 y TCP/443 y monta la configuración de Nginx, los certificados institucionales y el estado de Certbot.
+- El estado de Certbot se monta en el proxy desde `/srv/encit/platform/production/letsencrypt` como solo lectura.
+- El virtual host `xitle.encit.unam.mx` redirige HTTP a HTTPS y referencia `fullchain.pem` y `privkey.pem` de Certbot.
+- El upstream de Xitle es `revista-prod-web:80`.
+- El stack OJS declara el alias `revista-prod-web` para su servicio `web` en la red externa `encit_prod_edge`; MariaDB, worker y scheduler permanecen en la red interna OJS.
+- El `.env.example` de producción establece `PUBLIC_BASE_URL=https://xitle.encit.unam.mx` y rutas persistentes en SSD (`/srv/encit/data/revista/prod`) y RAID de datos (`/data/encit/data/revista/prod`). Contiene valores de ejemplo que deben sustituirse fuera de Git; no es un archivo de secretos utilizable directamente.
+- El bootstrap `prepare-production-host.sh` valida el montaje `/data` contra el UUID esperado, comprueba Docker, la identidad operativa `deploy`, la pertenencia de `deploy` al grupo `docker`, la identidad `www-data` 33:33, crea directorios y la red Docker `encit_prod_edge`. Requiere ejecutarse como root y falla si sus precondiciones no se cumplen.
+
+### Dependencias y pendientes identificados
+
+- El host debe tener Docker Engine y Compose plugin funcionales; la salida `ss` no demuestra por sí sola su instalación ni el estado del daemon.
+- Antes de ejecutar el bootstrap deben verificarse las precondiciones de usuario/grupo `deploy`, grupo `docker` e identidad `www-data` 33:33. No se debe crear ni modificar automáticamente el acceso SSH de `deploy` sin decisión administrativa.
+- La red externa `encit_prod_edge` debe existir antes de levantar el proxy y OJS; el bootstrap la crea si no existe.
+- El stack OJS debe desplegarse con un `.env` real, seguro y fuera de Git, imagen aprobada en TEST y credenciales/llaves generadas. El `.env.example` no debe copiarse sin sustituir los marcadores.
+- El proxy referencia el certificado de Xitle. Por ello, no debe levantarse con el vhost HTTPS activo antes de que Certbot haya emitido ambos archivos requeridos. La guía contempla detener el proxy, emitir por HTTP-01 standalone y volver a levantarlo sólo tras validar los archivos.
+- La guía de Certbot sigue pendiente de ejecución real. No se ha ejecutado Certbot, no se ha iniciado el proxy ni OJS y no se ha probado la llegada pública de TCP/80 con un listener activo.
+
+**Estado de la auditoría:** los archivos necesarios para proxy, virtual host y stack OJS están presentes en Git y sus referencias de red/alias coinciden. Esto acredita preparación del repositorio, no instalación ni funcionamiento en producción. No se realizaron cambios en el servidor, OPNsense ni servicios.
