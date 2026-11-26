@@ -253,3 +253,24 @@ inactive
 **Conclusión:** `firewalld` no está activo en el servidor al momento de la comprobación. Junto con la ausencia del ejecutable UFW y el ruleset `nftables` compartido (que muestra cadenas de filtrado creadas por Docker, pero no una cadena `INPUT`), no se identifica hasta ahora un gestor de firewall de host activo que esté bloqueando explícitamente conexiones dirigidas al propio servidor. Esta revisión no sustituye una prueba de conectividad entrante cuando el proxy tenga listeners.
 
 No se modificó ni habilitó ningún servicio o regla.
+
+
+## Inspección de sockets en escucha
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Equipo:** servidor de producción  
+**Comando ejecutado:** `sudo ss -lntup`.
+
+El fragmento recibido muestra:
+
+```text
+Netid   State     Recv-Q    Send-Q       Local Address:Port       Peer Address:Port   Process
+tcp     LISTEN    0         128                0.0.0.0:22              0.0.0.0:*       users:(("sshd",pid=1981,fd=6))
+tcp     LISTEN    0         128                   [::]:22                 [::]:*       users:(("sshd",
+```
+
+**Hallazgo confirmado en el fragmento:** SSH (`sshd`) escucha en TCP/22 en IPv4 (`0.0.0.0:22`) y en IPv6 (`[::]:22`). El fragmento está truncado al final de la segunda línea; por ello, no se considera todavía una captura completa del conjunto de sockets.
+
+**HTTP/HTTPS:** en el fragmento recibido no aparecen listeners TCP/80 ni TCP/443. Esto es consistente con que el proxy web aún no se ha instalado, pero la ausencia definitiva de otros listeners deberá confirmarse con la salida completa.
+
+No se modificó ningún servicio ni configuración.
