@@ -1,0 +1,517 @@
+# Diseño técnico de Revista Xitle con Open Journal Systems (OJS)
+
+**Fecha:** 26 de noviembre de 2026  
+**Estado:** diseño técnico propuesto; no implementado ni desplegado  
+**Repositorio documental:** \`Lukisimas/encit\`  
+**Rama documental:** \`docs/storage-xitle-hostnames\`  
+**Repositorio de aplicación:** Gitea privado \`encit/revista\`, rama \`main\`
+
+> Este documento es la referencia técnica principal para construir Revista Xitle. Describe una arquitectura objetivo y decisiones recomendadas. No afirma que existan Dockerfiles, Compose, imágenes OJS, contenedores, bases de datos o instalaciones de OJS en TEST o PROD.
+
+## 1. Propósito, alcance y estado
+
+Diseñar la plataforma de publicación de la revista institucional Xitle sobre Open Journal Systems (OJS), utilizando la infraestructura ENCiT de dos servidores físicos y la plataforma de automatización ya validada.
+
+El alcance incluye:
+
+- Selección de la línea de OJS y plataforma PHP/base de datos.
+- Arquitectura lógica y despliegue en contenedores.
+- Separación de TEST y PROD.
+- Persistencia de base de datos, archivos editoriales y configuración.
+- Integración con proxy, TLS, DNS y NAT existentes.
+- Construcción de imágenes y flujo CI/CD Gitea–Jenkins.
+- Seguridad, respaldos, restauración, monitoreo y criterios de aceptación.
+
+No incluye todavía: instalación de OJS, creación de contenedores, modificación de servidores, generación de secretos, configuración de DNS/OPNsense, elección de plugins editoriales ni puesta en producción.
+
+### Estado comprobado de partida
+
+| Elemento | Estado |
+|---|---|
+| Host de control/DEV/TEST | \`pruebas\`, \`10.129.100.2/28\`, VLAN 50 |
+| Gateway VLAN 50 | \`10.129.100.1\` |
+| Host de PROD | \`10.129.101.2/28\`, VLAN 51 |
+| Gateway VLAN 51 | \`10.129.101.1\` |
+| Publicación de Xitle | \`xitle.encit.unam.mx\` → \`132.247.168.166\` |
+| NAT TCP/80 y TCP/443 | OPNsense hacia \`10.129.101.2\`, comprobado previamente |
+| Gitea | \`https://git.infra.encit.unam.mx\`, alojado en TEST |
+| Repositorio de aplicación | \`encit/revista\`, privado, rama \`main\`; sólo inicializado |
+| Jenkins / Gitea Registry | Integración autenticada y push/pull de imagen de prueba validados |
+| OJS | No instalado; no hay imagen ni Compose de OJS verificados |
+| CI/CD de OJS | Diseño pendiente de implementación |
+| DNS interno para hostname de TEST | Pendiente de definir |
+| Certificado TLS de Xitle | Pendiente de seleccionar/emitir y validar para el servicio |
+
+Los datos de red describen la infraestructura documentada. Cualquier cambio de red, DNS, firewall, NAT o proxy requiere autorización y validación independiente.
+
+## 2. Decisiones arquitectónicas recomendadas
+
+| ID | Decisión propuesta | Motivo / condición |
+|---|---|---|
+| ADR-XTL-01 | Adoptar la línea OJS 3.5.x, fijando el último parche estable disponible al construir | Línea LTS con mantenimiento activo; nunca usar \`latest\` |
+| ADR-XTL-02 | Construir una imagen propia desde el paquete oficial de distribución PKP | Controlar PHP, extensiones, Apache, permisos y procedencia |
+| ADR-XTL-03 | Apache + PHP en el contenedor web de OJS | OJS soporta Apache; reduce la complejidad frente a PHP-FPM más otro servidor web interno |
+| ADR-XTL-04 | MariaDB dedicada por entorno | Aislamiento de datos y ciclo de vida independiente |
+| ADR-XTL-05 | Archivos privados de OJS fuera del document root | Los manuscritos y documentos de revisión no deben ser descargables directamente |
+| ADR-XTL-06 | Nginx existente como proxy perimetral/reverse proxy | Reutilizar el punto de entrada institucional; TLS termina en PROD |
+| ADR-XTL-07 | TEST y PROD con Compose, redes, datos y secretos independientes | Evitar contaminación cruzada y permitir pruebas seguras |
+| ADR-XTL-08 | Build once / promote many por digest OCI | La imagen que pasa TEST es exactamente la que se libera a PROD |
+| ADR-XTL-09 | Sin Redis, balanceador, Kubernetes ni almacenamiento compartido en la primera versión | No introducir dependencias sin necesidad demostrada |
+| ADR-XTL-10 | Un journal inicial dentro de OJS | OJS permite administrar uno o varios journals; iniciar con Xitle y ampliar sólo si se requiere |
+
+Estas decisiones son una línea base de diseño. Se podrán revisar antes de la implementación si las pruebas de compatibilidad, capacidad o los requisitos editoriales muestran una razón concreta.
+
+## 3. Versión de OJS y plataforma de ejecución
+
+### 3.1 OJS
+
+Se recomienda OJS 3.5.x. El repositorio oficial de PKP identifica 3.5.x como línea con mantenimiento activo y LTS; 3.6.x aparece como pre-release en la política consultada. La política de soporte puede cambiar, por lo que deberá revisarse nuevamente al preparar cada actualización.
+
+Como referencia al 26 de noviembre de 2026, el repositorio de PKP registra el hito de mantenimiento 3.5.0-6. Antes de construir se debe confirmar que ese paquete —o un parche posterior publicado por PKP— sea la última versión estable disponible en la página oficial de descargas.
+
+Reglas de versionado:
+
+- Fijar versión exacta de OJS, no una rama flotante.
+- Descargar el paquete oficial de distribución, no construir producción desde la rama \`main\` del repositorio de desarrollo.
+- Registrar URL de origen y SHA-256 del paquete.
+- Validar el checksum antes de extraer el código.
+- Registrar versión de plugins y tema, junto con su compatibilidad explícita con esa versión de OJS.
+- No actualizar OJS ni plugins automáticamente al iniciar un contenedor.
+
+### 3.2 PHP y extensiones
+
+OJS 3.5 requiere PHP 8.2 o posterior. La guía oficial de inicio de PKP señala expresamente PHP 8.2+ y extensiones \`mbstring\`, \`xml\` e \`intl\`. El README oficial del proyecto muestra, además, requisitos de plataforma como \`curl\`, \`dom\`, \`fileinfo\`, \`gd\`, \`intl\`, \`mbstring\`, \`openssl\`, \`simplexml\`, \`xml\`, \`xmlwriter\`, \`zip\` y \`zlib\`; la lista exacta se debe obtener del paquete y verificar con Composer para la versión fijada.
+
+Propuesta inicial:
+
+- PHP 8.2 como mínimo de compatibilidad.
+- Evaluar PHP 8.3 como versión de runtime, sólo después de ejecutar \`composer check-platform-reqs\` y las pruebas funcionales con el paquete exacto.
+- Fijar la imagen base por versión y digest.
+- Mantener iguales PHP y extensiones en TEST y PROD.
+- Verificar por separado la configuración de PHP web y CLI: límites de memoria, tiempo de ejecución, tamaño de carga, zona horaria y extensiones.
+
+No fijar aún valores de memoria o límites de carga: deben derivarse del tamaño máximo de manuscritos y anexos que establezca el equipo editorial.
+
+### 3.3 Base de datos
+
+Se propone MariaDB, por familiaridad operativa y compatibilidad documentada por PKP. El README oficial de OJS indica MariaDB 10.3+; la guía de inicio de PKP también enumera MySQL y PostgreSQL. Para evitar interpretar una versión mínima como recomendación de producción:
+
+- Evaluar MariaDB 10.11 LTS como versión conservadora inicial.
+- Verificar la matriz de compatibilidad y ejecutar pruebas con la versión exacta de OJS antes de fijar la imagen.
+- Fijar versión y digest de la imagen MariaDB.
+- Usar InnoDB, juego de caracteres y collation compatibles con la versión de OJS.
+- No exponer el puerto de MariaDB al host ni a redes externas.
+- Crear una base y un usuario exclusivos para OJS, con privilegios sólo sobre esa base.
+- Mantener una instancia y volumen distintos para TEST y PROD.
+
+No reutilizar una base de datos institucional existente ni compartir la base entre entornos.
+
+## 4. Arquitectura lógica
+
+### 4.1 Diagrama
+
+\`\`\`mermaid
+flowchart TB
+  U["Lectores, autores y editores"] --> WAN["Internet"]
+  WAN --> FW["OPNsense NAT TCP 80/443"]
+  FW --> EDGE["Nginx reverse proxy PROD"]
+  EDGE --> WEB["Contenedor OJS Apache + PHP"]
+  WEB --> DB[("MariaDB PROD")]
+  WEB --> FILES[("Archivos privados OJS")]
+  WEB --> PUB[("Directorio público persistente")]
+  WEB --> SMTP["Relay SMTP institucional"]
+  J["Jenkins / DinD en TEST"] --> REG["Gitea Container Registry"]
+  REG --> TEST["Compose TEST"]
+  TEST --> TWEB["OJS TEST"]
+  TWEB --> TDB[("MariaDB TEST")]
+  TWEB --> TFILES[("Archivos TEST")]
+  J -->|"aprobación + mismo digest"| EDGE
+\`\`\`
+
+El diagrama es conceptual. No representa todavía redes Docker, puertos internos, rutas de host ni una conectividad Jenkins → PROD ya comprobada.
+
+### 4.2 Componentes por entorno
+
+| Componente | TEST — VLAN 50 | PROD — VLAN 51 |
+|---|---|---|
+| Host físico | \`10.129.100.2\` | \`10.129.101.2\` |
+| OJS web | Compose de prueba aislado | Compose de producción |
+| Base de datos | MariaDB TEST | MariaDB PROD |
+| Archivos privados | Almacenamiento exclusivo TEST | Almacenamiento exclusivo PROD |
+| Configuración | Archivo local protegido TEST | Archivo local protegido PROD |
+| Proxy | Nombre interno de prueba por definir | Nginx de producción |
+| TLS | Certificado interno si se publica por HTTPS interno | Certificado válido para \`xitle.encit.unam.mx\` |
+| SMTP | Mailpit o relay de pruebas | Relay SMTP institucional |
+| Backups | Datos descartables o respaldos de prueba | Política formal y restauración ensayada |
+| Imagen OJS | Digest candidato | Mismo digest aprobado |
+
+TEST comparte host físico con Gitea y Jenkins. Por ello debe ser un proyecto Compose independiente, con nombres, redes, volúmenes y límites propios; no debe compartir base de datos, directorios de datos ni secretos con la plataforma de control. Se deben vigilar CPU, RAM y espacio para evitar que builds de Jenkins afecten las pruebas editoriales.
+
+## 5. Diseño de contenedores y redes
+
+### 5.1 Servicios iniciales
+
+**Servicio \`ojs-web\`**
+
+- Imagen propia basada en Apache + PHP compatible con OJS.
+- Código OJS incluido en la imagen, inmutable durante la ejecución.
+- Puerto HTTP sólo dentro de la red Docker.
+- Sin publicación directa de puertos en la interfaz pública del host.
+- Configuración OJS montada desde archivo local protegido.
+- Directorios de caché y escritura con permisos explícitos para el usuario del proceso web.
+- Healthcheck HTTP local que compruebe que Apache y OJS responden.
+
+**Servicio \`mariadb\`**
+
+- Imagen oficial fijada por versión/digest.
+- Volumen persistente exclusivo.
+- Healthcheck con herramienta de cliente incluida en la imagen.
+- Red privada compartida sólo con OJS.
+- Sin \`ports:\` publicados al host.
+- Usuario de aplicación separado del usuario administrativo de base de datos.
+
+**Servicio scheduler**
+
+OJS necesita ejecutar tareas programadas para determinadas funciones. No se debe inventar el comando ni el modelo de scheduler: se implementará como servicio separado o tarea del host únicamente después de confirmar en la documentación y paquete exactos de OJS 3.5 el mecanismo soportado. Debe ejecutarse con la misma imagen y configuración que OJS, sin duplicar procesos web.
+
+**Servicios no incluidos inicialmente**
+
+- Redis: no es requisito base de OJS; añadirlo sólo si se justifica con mediciones y soporte de la versión.
+- Elasticsearch/OpenSearch: no se incorpora sin un requisito editorial concreto.
+- phpMyAdmin/Adminer: no se publicará en ningún entorno.
+- Mailpit: sólo para TEST, nunca como relay productivo.
+- Segundo proxy Nginx dentro del stack: no es necesario si el proxy existente puede enviar al Apache de OJS por una red controlada.
+
+### 5.2 Redes
+
+Se requieren dos segmentos lógicos:
+
+1. **Red de aplicación:** OJS y MariaDB. No debe ser una red enrutable desde Internet. MariaDB sólo acepta conexiones desde OJS y herramientas administrativas autorizadas.
+2. **Red de borde:** sólo OJS web conectado al proxy Nginx existente. La base de datos no debe pertenecer a esta red.
+
+La red de borde debe reutilizar la red de proxy de producción ya definida si su configuración real lo permite. Antes de conectar contenedores se debe revisar el Compose y las subredes efectivas. Está documentado un posible solapamiento de \`172.18.0.0/16\` entre redes Docker de control y producción; no asignar una nueva subred por suposición ni intentar enrutar redes solapadas.
+
+El puerto 3306 no se publicará. El puerto Apache sólo será accesible desde el proxy y la red de aplicación autorizada.
+
+## 6. Proxy, DNS y TLS
+
+### 6.1 Producción
+
+Flujo público previsto:
+
+1. \`xitle.encit.unam.mx\` resuelve a \`132.247.168.166\`.
+2. OPNsense realiza NAT TCP/80 y TCP/443 hacia \`10.129.101.2\`.
+3. Nginx en PROD recibe las conexiones.
+4. Nginx termina TLS y reenvía al contenedor web OJS por la red Docker de borde.
+5. OJS recibe el esquema/host original mediante cabeceras proxy confiables.
+
+El administrador confirmó previamente DNS público y NAT. No es parte de este diseño modificar esos elementos.
+
+### 6.2 Certificado y cabeceras
+
+- Emitir u obtener un certificado válido para \`xitle.encit.unam.mx\`; no asumir que el wildcard interno de \`infra.encit.unam.mx\` cubre este dominio.
+- No reutilizar la clave privada del certificado de infraestructura.
+- Redirigir HTTP a HTTPS.
+- Configurar TLS moderno, renovación y monitoreo de expiración.
+- Configurar \`trusted_hosts\`, URL base y parámetros proxy de OJS de acuerdo con el dominio real.
+- Confiar en \`X-Forwarded-Proto\` y \`X-Forwarded-Host\` sólo desde el proxy controlado; no aceptar cabeceras arbitrarias de clientes.
+- Establecer límites de tamaño de petición coherentes entre Nginx y PHP.
+- Evitar almacenar caché pública de respuestas autenticadas, formularios editoriales o contenido privado.
+
+### 6.3 TEST
+
+Definir un hostname interno de prueba y su registro/override DNS dentro de ENCiT. El nombre definitivo queda pendiente; no publicar TEST en DNS público ni abrirlo desde Internet. El certificado puede ser institucional interno si los clientes de prueba confían en la CA. No modificar OPNsense o DNS sin autorización.
+
+## 7. Persistencia y estructura de datos
+
+La imagen contiene el código y las dependencias; los datos mutables viven fuera de ella.
+
+| Elemento | Persistencia | Exposición |
+|---|---|---|
+| Código OJS y plugins aprobados | Imagen OCI versionada | Sólo lectura en runtime |
+| \`config.inc.php\` | Archivo local por entorno, montado en runtime | Nunca en Git ni en capas de imagen |
+| Base de datos | Volumen/directorio persistente de MariaDB | Sólo red privada |
+| \`files_dir\` | Volumen/directorio persistente fuera del document root | No accesible por HTTP directo |
+| \`public/\` y recursos públicos cargados | Volumen persistente si la operación de OJS lo requiere | Sólo archivos destinados a publicación |
+| Caché y temporales | Directorios escribibles; reconstruibles | No respaldar como fuente primaria |
+| Logs | stdout/stderr y sistema de logs del host | Acceso administrativo |
+
+La ruta exacta en disco no se fija en este diseño. Antes de elegirla se debe inspeccionar el almacenamiento montado en ambos hosts, capacidad libre, sistema de archivos, rendimiento, política de snapshots y respaldos. En PROD se ha documentado un volumen \`/data\` montado; su uso para archivos de OJS es candidato, no una decisión cerrada hasta verificar capacidad, propósito y política de respaldo.
+
+No guardar \`files_dir\` dentro del directorio público ni dentro de la imagen. Los documentos de envío, revisión y producción editorial pueden contener información no publicada y deben quedar fuera del document root.
+
+## 8. Configuración y secretos
+
+- Mantener una configuración no secreta de referencia versionada, sin credenciales.
+- Montar \`config.inc.php\` desde una ruta local protegida o generarlo de forma controlada al desplegar.
+- No incluir valores reales en \`.env.example\`, Jenkinsfile, Dockerfile, manifiestos de release ni logs.
+- Credenciales de MariaDB distintas para TEST y PROD.
+- Contraseña administrativa inicial de OJS entregada por un mecanismo seguro y rotada al finalizar la instalación.
+- SMTP productivo con credenciales propias y TLS cuando el relay lo soporte.
+- Tokens Gitea/Registry y credenciales de despliegue almacenados en Jenkins Credentials.
+- Permisos de archivos mínimos: lectura para el proceso web donde corresponda y escritura sólo en caché, directorios públicos necesarios y archivos privados.
+- Tras la instalación inicial, impedir que el proceso web modifique el código y restringir la escritura de configuración.
+- No montar el socket Docker del host en Jenkins. Mantener el DinD TLS ya validado y limitar los jobs que pueden usar credenciales de despliegue.
+
+## 9. Contrato del repositorio Gitea
+
+Repositorio: \`https://git.infra.encit.unam.mx/encit/revista\`.
+
+Estructura objetivo recomendada:
+
+\`\`\`
+revista/
+├── README.md
+├── .gitignore
+├── Dockerfile
+├── .dockerignore
+├── Jenkinsfile
+├── docker/
+│   ├── compose.test.yml
+│   └── compose.prod.yml
+├── config/
+│   ├── config.inc.php.example
+│   └── php.ini
+├── scripts/
+│   ├── entrypoint-check.sh
+│   ├── healthcheck.sh
+│   └── backup-verify.sh
+├── tests/
+│   ├── image-smoke.sh
+│   └── http-smoke.sh
+└── docs/
+    ├── ADR/
+    ├── OPERACION.md
+    └── BACKUP_RESTORE.md
+\`\`\`
+
+Esta estructura es una propuesta, no un inventario del repositorio remoto. El paquete oficial de OJS no se debe versionar como código de terceros salvo que exista una razón de mantenimiento/licenciamiento explícita; el Dockerfile descargará una versión exacta y verificará su checksum. No almacenar datos, archivos editoriales, \`.env\`, certificados ni claves privadas en Git.
+
+## 10. CI/CD Gitea–Jenkins
+
+La arquitectura de CI/CD ya está definida en \`docs/18_DISENO_CICD_XITLE_OJS.md\`. Este documento la concreta a nivel de aplicación.
+
+### 10.1 Flujo
+
+1. Commit o Pull Request en Gitea.
+2. Jenkins obtiene el commit exacto y ejecuta validaciones.
+3. Descarga el paquete oficial OJS fijado y verifica SHA-256.
+4. Construye una sola imagen con PHP, extensiones, Apache, código OJS y plugins aprobados.
+5. Ejecuta pruebas de plataforma, configuración, permisos, ausencia de secretos y arranque.
+6. Publica en Gitea Container Registry con etiqueta del SHA completo.
+7. Recupera y registra el digest OCI del manifiesto.
+8. Despliega el digest en TEST.
+9. Ejecuta pruebas HTTP y pruebas funcionales editoriales.
+10. Espera aprobación humana.
+11. Verifica backup y preflight de PROD.
+12. Descarga y despliega exactamente el mismo digest en PROD.
+13. Ejecuta smoke tests, registra resultado y conserva el digest anterior.
+
+### 10.2 Identidad de imagen
+
+Nombre lógico propuesto, pendiente de confirmar namespace de Packages:
+
+\`\`\`
+git.infra.encit.unam.mx/encit/ojs:<GIT_COMMIT_SHA>
+git.infra.encit.unam.mx/encit/ojs@sha256:<OCI_DIGEST>
+\`\`\`
+
+El digest es la identidad de despliegue. No usar \`latest\` ni reconstruir en PROD. El paquete temporal \`jenkins/registry-smoke-test:smoke-1\` es sólo una prueba de Registry y no representa una imagen de OJS.
+
+### 10.3 Límites de confianza
+
+- Pull Requests y ramas no confiables: sin credenciales de push ni despliegue.
+- Credencial de publicación: permiso mínimo para escribir el paquete OJS.
+- TEST: credencial de despliegue restringida al stack de prueba.
+- PROD: credencial separada, acceso restringido y aprobación manual.
+- Validar host keys SSH; no desactivar comprobación de identidad.
+- No imprimir secretos ni usar argumentos de build para credenciales.
+- La conexión Jenkins → PROD aún debe validarse; no se da por existente.
+
+## 11. Operación de OJS
+
+### 11.1 Correo
+
+TEST debe usar Mailpit o un relay de pruebas. PROD debe usar un relay SMTP institucional autorizado, con remitente institucional, autenticación y TLS según política. Validar SPF, DKIM y DMARC con el área responsable si aplica. No enviar correo real desde TEST.
+
+### 11.2 Tareas programadas
+
+Identificar las tareas que requiere OJS 3.5 y configurar el mecanismo recomendado por PKP para esa versión. Validar frecuencia, logs, concurrencia y comportamiento ante fallos. No ejecutar el scheduler en varios contenedores simultáneamente sin que la documentación de PKP lo permita.
+
+### 11.3 Plugins e integraciones editoriales
+
+No instalar plugins por anticipado. Antes de incorporarlos, registrar:
+
+- Necesidad editorial que resuelven.
+- Versión compatible con OJS exacto.
+- Procedencia y mantenimiento.
+- Dependencias PHP/servicios externos.
+- Datos personales o credenciales que procesan.
+- Procedimiento de actualización y rollback.
+
+ORCID, DOI/Crossref, ROR, preservación digital, antiplagio, estadísticas e indexación se tratarán como requisitos funcionales/editoriales por validar. No asumir que están configurados por instalar OJS.
+
+### 11.4 Monitoreo y logs
+
+- Healthcheck de MariaDB y OJS.
+- Logs Apache/PHP/OJS a stdout/stderr o colector administrado.
+- Logs de Nginx y accesos HTTP.
+- Alertas por espacio, inodos, memoria, CPU, reinicios, errores 5xx, expiración TLS y fallos de backup.
+- No registrar contraseñas, tokens, cookies de sesión ni contenido de manuscritos.
+- Integrar Prometheus/Grafana y Loki/Promtail cuando la plataforma institucional esté implementada y se defina su alcance; no son dependencias para el primer despliegue.
+
+## 12. Seguridad
+
+1. Mantener PROD sólo en VLAN 51 y permitir tráfico entrante público únicamente a través de OPNsense/Nginx.
+2. No exponer MariaDB, PHP/Apache, Jenkins, Gitea ni Mailpit a Internet.
+3. No publicar puertos de base de datos en el host.
+4. Mantener la base de datos en red privada y usar cuentas con privilegios mínimos.
+5. Proteger \`files_dir\` fuera del document root.
+6. Aplicar actualizaciones de seguridad de sistema base, PHP, Apache, MariaDB, OJS y plugins con ventana y respaldo.
+7. Escanear imagen y dependencias antes de liberar; elegir herramienta y política de severidad antes de convertirlo en bloqueo de pipeline.
+8. Usar imagen base mínima, paquetes fijados, usuario no privilegiado cuando sea compatible con el paquete y permisos explícitos.
+9. Limitar tamaño de carga, tiempo de ejecución y tipos de archivos según necesidad editorial.
+10. Aplicar políticas de cuentas, contraseñas, roles, administración y MFA cuando OJS/entorno lo permita.
+11. Proteger sesiones y cookies con HTTPS y atributos seguros.
+12. Definir política de conservación y eliminación de manuscritos, datos de usuarios y respaldos con el área editorial y las políticas institucionales.
+
+## 13. Backups, recuperación y rollback
+
+La unidad de respaldo no es sólo la base de datos. Deben coordinarse:
+
+- Base de datos MariaDB.
+- \`files_dir\` completo.
+- Directorios públicos persistentes que contengan archivos cargados o personalizados.
+- Configuración local de OJS, sin exponerla.
+- Versiones de imagen, plugins y manifiesto de release.
+
+Para una copia consistente, coordinar la exportación de la base con una instantánea/copia de archivos en un periodo sin escrituras o con una ventana de mantenimiento. Verificar que el mecanismo de backup elegido sea consistente con el motor y volumen utilizados.
+
+Política propuesta, pendiente de aprobar:
+
+- Copias diarias y semanales.
+- Copia adicional antes de cada actualización de OJS, plugins o esquema.
+- Copia fuera del host de producción o en almacenamiento independiente.
+- Cifrado en reposo y control de acceso.
+- Retención y RPO/RTO definidos con responsables institucionales.
+- Prueba periódica de restauración en TEST aislado.
+
+Rollback de aplicación:
+
+1. Detener la promoción.
+2. Volver a la imagen anterior por digest si el esquema de base de datos sigue siendo compatible.
+3. Si hubo migración de esquema o modificación irreversible de datos, evaluar restauración coordinada de DB y archivos desde backup.
+4. No automatizar restauraciones destructivas ante cualquier fallo HTTP.
+5. Registrar el incidente, digest, backup utilizado y resultado.
+
+No liberar una actualización que modifique el esquema sin respaldo previo y procedimiento de recuperación ensayado.
+
+## 14. Capacidad y almacenamiento
+
+No se asignan todavía CPU, RAM, tamaño de volúmenes ni límites de carga: faltan métricas de uso editorial y capacidad efectiva de los discos.
+
+Antes de crear volúmenes:
+
+- Inventariar discos, montajes, capacidad libre, IOPS aproximadas y política de respaldo en TEST y PROD.
+- Determinar dónde residirán los datos de MariaDB y los archivos editoriales.
+- Priorizar baja latencia y protección para la base de datos.
+- Dimensionar el almacenamiento de archivos según manuscritos, galeras, PDFs, imágenes y crecimiento esperado.
+- Definir umbrales de alerta y margen de crecimiento.
+- No confundir espacio libre en un disco de gran capacidad con un backup independiente.
+
+## 15. Pruebas de aceptación
+
+### 15.1 Construcción
+
+- [ ] Versión exacta OJS 3.5.x y checksum oficial registrados.
+- [ ] PHP y extensiones validados con Composer y runtime web/CLI.
+- [ ] Imagen construida sin secretos ni datos de entorno.
+- [ ] Usuario, permisos y directorios escribibles comprobados.
+- [ ] Imagen escaneada y digest registrado.
+
+### 15.2 TEST
+
+- [ ] Compose TEST separado de Gitea/Jenkins.
+- [ ] MariaDB saludable y sin puerto publicado.
+- [ ] OJS inicia detrás del proxy interno.
+- [ ] Instalación inicial de OJS completada.
+- [ ] Journal Xitle creado y configuración institucional revisada.
+- [ ] Acceso de lector, autor, revisor, editor y administrador probado.
+- [ ] Envío de manuscrito de prueba y carga de archivos probados.
+- [ ] Flujo editorial de prueba recorrido hasta publicación.
+- [ ] \`files_dir\` no es accesible por URL directa.
+- [ ] Correo de prueba recibido en Mailpit.
+- [ ] Tareas programadas ejecutadas y verificadas.
+- [ ] Backup y restauración de TEST ensayados.
+- [ ] Healthcheck y smoke tests automatizados.
+
+### 15.3 PROD
+
+- [ ] Certificado TLS válido para \`xitle.encit.unam.mx\`.
+- [ ] Proxy, cabeceras y redirección HTTP→HTTPS verificados.
+- [ ] Secrets y configuración PROD independientes de TEST.
+- [ ] Backups recientes y restauración ensayada.
+- [ ] Aprobación explícita de la liberación.
+- [ ] PROD descarga exactamente el digest probado en TEST.
+- [ ] Smoke tests externos y funcionales satisfactorios.
+- [ ] Monitoreo de espacio, errores, logs y backups habilitado.
+- [ ] Procedimiento de rollback disponible y responsable de guardia definido.
+
+## 16. Secuencia de implementación
+
+La ejecución se dividirá en fases con evidencia al cierre de cada una:
+
+1. **Aprobación del diseño:** revisar decisiones ADR, dominio de prueba, almacenamiento, SMTP y requisitos editoriales.
+2. **Inspección de almacenamiento:** lectura de discos/montajes/capacidad en ambos hosts; decidir rutas sin sobrescribir datos existentes.
+3. **Preparación del repositorio:** clonar el repositorio Gitea sólo para iniciar el trabajo de implementación; conservar su contenido inicial y trabajar en ramas/commits revisables.
+4. **Construcción de imagen:** Dockerfile, paquete OJS fijado, extensiones, Apache, healthcheck y pruebas locales.
+5. **Compose TEST:** MariaDB, OJS, redes y persistencia aisladas.
+6. **Instalación funcional TEST:** instalar OJS, configurar Xitle, probar flujo editorial, correo y scheduler.
+7. **Backups TEST:** demostrar restauración de base y archivos.
+8. **Pipeline Jenkins:** build, test, push, digest y despliegue TEST.
+9. **Preparación PROD:** configuración, secretos, TLS, almacenamiento, backups y preflight; no modificar OPNsense/DNS.
+10. **Promoción controlada:** aprobación, mismo digest, smoke tests y registro de release.
+11. **Operación:** monitoreo, parches, backups, revisiones de plugins y ejercicios de recuperación.
+
+Cada fase debe documentarse con evidencia y no se marcará como implementada por el solo hecho de que exista el archivo de configuración.
+
+## 17. Riesgos y decisiones abiertas
+
+| Tema | Riesgo | Evidencia/decisión requerida |
+|---|---|---|
+| Parche exacto OJS | Instalar versión desactualizada | Confirmar última descarga estable PKP al construir |
+| PHP 8.3 vs 8.2 | Incompatibilidad de extensiones/plugins | Pruebas de plataforma y funcionales |
+| MariaDB 10.11 | Compatibilidad y ciclo de soporte | Validar versión exacta contra OJS y política de mantenimiento |
+| Scheduler OJS 3.5 | Tareas editoriales no ejecutadas o duplicadas | Confirmar mecanismo oficial para release fijado |
+| Almacenamiento PROD | Pérdida/insuficiencia de espacio | Inspección de montajes y capacidad |
+| Host compartido TEST | Builds afectan pruebas | Límites de recursos y ventana de build |
+| Redes Docker | Solapamiento de subredes | Inspeccionar redes y rutas antes de conectar proxy |
+| Certificado TLS | Dominio sin certificado adecuado | Emitir/validar certificado de Xitle |
+| SMTP | Correos editoriales no entregados | Confirmar relay, remitente y autenticación |
+| Plugins | Incompatibilidad o vulnerabilidades | Inventario funcional y matriz de compatibilidad |
+| Backups | Copia incompleta o no restaurable | Prueba integral DB + archivos |
+| SSH de Jenkins a hosts | Despliegue no disponible/seguro | Validar conectividad, host keys y cuentas restringidas |
+| RPO/RTO | Recuperación no alineada a necesidades | Aprobación institucional/editorial |
+
+## 18. Referencias técnicas
+
+- PKP, **Getting Started with OJS 3.5**: https://github.com/pkp/pkp-docs/blob/main/admin-guide/en/getting-started.md
+- PKP, **OJS README / requisitos de plataforma**: https://github.com/pkp/ojs/blob/main/README.md
+- PKP, **Security Policy / versiones soportadas**: https://github.com/pkp/ojs/security/policy
+- PKP, **Documentación y guías oficiales**: https://docs.pkp.sfu.ca/
+- PKP, **Descargas oficiales de OJS**: https://pkp.sfu.ca/software/ojs/
+
+Consultar estas fuentes al construir y actualizar. Las versiones y requisitos pueden cambiar; el paquete exacto descargado y su README son la autoridad final para la implementación.
+
+---
+
+## Registro de estado
+
+**26 de noviembre de 2026 — Primera versión del diseño técnico**
+
+- Se establece OJS 3.5.x como línea recomendada, pendiente de fijar el parche exacto.
+- Se define la arquitectura objetivo Apache/PHP + MariaDB, proxy Nginx y persistencia separada.
+- Se separan claramente TEST y PROD.
+- Se establece que el repositorio Gitea contiene únicamente su inicialización y que la implementación OJS no existe todavía.
+- Se define que clonar el repositorio será una actividad de implementación posterior, no un requisito para diseñar la arquitectura.
+- No se realizaron cambios en hosts, contenedores, DNS, OPNsense ni servicios.
