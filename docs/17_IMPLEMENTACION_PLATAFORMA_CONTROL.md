@@ -108,9 +108,11 @@ El inventario del directorio de Jenkins reportó un único job:
 
 - `prueba-gitea`
 
-Esto documenta que existe una primera configuración de job en Jenkins. No se obtuvo su tipo, repositorio SCM, rama, Jenkinsfile, credenciales referenciadas, triggers ni resultado de ejecución. Tampoco se ha validado que el job haga checkout de Gitea o que ejecute un build con Docker-in-Docker.
+La inspección de sólo lectura del XML confirmó que `prueba-gitea` es un job Pipeline (`flow-definition`) con definición `CpsFlowDefinition` y un script inline de 14 líneas. No tiene SCM configurado, bloque de triggers, builders ni publishers declarados en el XML inspeccionado.
 
-No se deben inferir pipelines de OJS a partir de la existencia de este job. La integración Jenkins–Gitea y el pipeline de construcción/publicación de OJS permanecen pendientes de inspección.
+El job fue creado únicamente como prueba puntual de comunicación entre Jenkins y Gitea. No es un pipeline de despliegue ni debe interpretarse como evidencia de checkout automatizado, uso de un `Jenkinsfile` desde un repositorio, construcción de imágenes o publicación al Container Registry. Se conserva como antecedente de la prueba; no se modificó ni eliminó.
+
+No se deben inferir pipelines de OJS a partir de la existencia de este job. La integración funcional para CI/CD y el pipeline de construcción/publicación de OJS permanecen pendientes de diseño e inspección.
 
 ## 5. Reverse proxy y certificados
 
@@ -185,7 +187,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 | Jenkins con Docker CLI y JDK 21 | Declarado en Dockerfile |
 | Docker-in-Docker con TLS y volumen persistente | Declarado; montajes observados |
 | CA institucional montada en Jenkins y DinD | Montajes observados |
-| Job `prueba-gitea` | Nombre observado; configuración/ejecución pendiente |
+| Job `prueba-gitea` | Pipeline inline de prueba, 14 líneas; sin SCM ni triggers; no es pipeline de despliegue |
 | Integración funcional Jenkins–Gitea | Pendiente |
 | Login y push/pull del Container Registry | Pendiente |
 | Pipeline y tag OJS probados en TEST | Pendiente |
@@ -196,7 +198,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 ## 10. Siguientes pasos recomendados (sólo lectura inicialmente)
 
 1. Corregir la extracción de parámetros no sensibles de `app.ini` y confirmar Gitea Packages en runtime sin mostrar secretos.
-2. Inspeccionar selectivamente la configuración XML del job `prueba-gitea`: tipo, URL SCM sin credenciales, rama, Jenkinsfile/script y triggers.
+2. Diseñar el pipeline CI/CD real para OJS y decidir su ubicación (Jenkinsfile versionado en el repositorio); no reutilizar `prueba-gitea` como pipeline de despliegue.
 3. Comparar plugins instalados con `plugins.txt` y decidir si el archivo versionado debe declarar explícitamente el plugin `gitea` y los demás requeridos.
 4. Verificar versión Java y conectividad TLS Jenkins → Docker-in-Docker y Jenkins → Gitea, sin publicar secretos.
 5. Revisar la ACL de los virtual hosts contra las redes autorizadas reales.
