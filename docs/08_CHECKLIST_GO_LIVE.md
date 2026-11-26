@@ -33,7 +33,9 @@
 - [ ] Crear/validar el registro o override DNS interno para los demás equipos autorizados. Las consultas A a DNS institucionales y públicos devolvieron `NXDOMAIN`; configurar, si corresponde, un override interno hacia `10.129.100.2`. No publicar el hostname de infraestructura en DNS público ni considerar modificada la configuración de OPNsense.
 - [ ] Inspeccionar el job inicial `prueba-gitea` y validar checkout/ejecución desde Gitea.
 - [ ] Confirmar versión Java en runtime y conectividad TLS Jenkins → Docker-in-Docker.
-- [ ] Definir cuenta técnica de Gitea y token de alcance mínimo para la prueba de Packages; no reutilizar la cuenta administrativa.
+- [x] Cuenta local `jenkins` creada en Gitea y confirmada por el administrador como identidad técnica prevista.
+- [ ] Generar token dedicado para `jenkins` con permisos mínimos de lectura/escritura de Packages; guardarlo como credencial segura y no en Git.
+- [ ] Confirmar permisos de `jenkins` sobre el namespace/paquete de prueba.
 - [x] Cliente Docker disponible en `pruebas`: CLI y Engine `29.7.2`; `sudo docker version` e `info` respondieron correctamente. Usuario `administrador` (UID 1000), sin pertenencia al grupo `docker`; se utilizará `sudo`.
 - [ ] Ejecutar `docker login` de forma interactiva y validar publicación/descarga de una imagen de prueba en Gitea Container Registry.
 - [ ] Conciliar plugins instalados con `control/jenkins/plugins.txt`.
