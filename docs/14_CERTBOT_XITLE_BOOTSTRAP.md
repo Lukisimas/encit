@@ -9,8 +9,8 @@ Esta confirmación documenta el estado reportado; no sustituye las pruebas técn
 ## Condiciones previas para emitir
 
 - Registro público A `xitle.encit.unam.mx -> 132.247.168.166` creado (confirmado por el administrador).
-- Resolución A comprobada desde un resolver público.
-- Si existe AAAA, conectividad IPv6 funcional; de lo contrario, retirar/corregir el registro AAAA.
+- Resolución A comprobada desde dos resolvers públicos (Cloudflare `1.1.1.1` y Google `8.8.8.8`), ambos devuelven `132.247.168.166`.
+- Consulta AAAA realizada desde Cloudflare; no se observó registro AAAA publicado.
 - NAT TCP/80 en OPNsense dirigido al servidor de producción `10.129.101.2`.
 - Regla de firewall WAN que permita TCP/80 hacia el destino NAT.
 - TCP/80 disponible en el host de producción para Certbot standalone.
@@ -102,8 +102,8 @@ Si la renovación falla, restaurar el proxy y revisar el error; no dejarlo deten
 ## Estado del diseño y pendientes
 
 - DNS público A creado y apuntando a la WAN de OPNsense, confirmado por el administrador.
-- Pendiente registrar evidencia de consultas A desde resolvers externos.
-- Pendiente confirmar que no exista un AAAA no funcional.
+- Resolución A confirmada desde Cloudflare y Google; ambos devuelven `132.247.168.166`.
+- Consulta AAAA a Cloudflare sin registro AAAA en la respuesta.
 - Pendiente probar llegada de TCP/80 desde Internet hasta producción.
 - Compose monta el estado de Certbot en el proxy como solo lectura.
 - El vhost referencia el certificado en `/etc/letsencrypt/live/xitle.encit.unam.mx/`.
