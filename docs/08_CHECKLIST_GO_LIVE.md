@@ -80,9 +80,9 @@
 - [x] Confirmar que el host `pruebas` resuelve `git.infra.encit.unam.mx` a `10.129.100.2`.
 - [x] Añadir `extra_hosts: ["git.infra.encit.unam.mx:10.129.100.2"]` al servicio `jenkins` en `/srv/encit/platform/control/docker-compose.yml`.
 - [x] Validar sintaxis y configuración efectiva con `sudo docker compose config -q`; Compose muestra `git.infra.encit.unam.mx=10.129.100.2`.
-- [ ] Aplicar el cambio al contenedor Jenkins de forma controlada.
-- [ ] Verificar resolución desde el agente después de aplicar el cambio.
-- [ ] Validar TLS desde Jenkins sin `curl -k`.
-- [ ] Validar autenticación API de Gitea desde Jenkins sin exponer tokens en consola/logs.
+- [x] Aplicar el cambio al contenedor Jenkins de forma controlada; se recreó únicamente Jenkins y se conservó el volumen persistente.
+- [x] Verificar resolución desde el contenedor Jenkins después de recrearlo: `git.infra.encit.unam.mx` resuelve a `10.129.100.2`.
+- [x] Validar TLS desde el contenedor Jenkins sin `curl -k`: HTTPS `HTTP=200`, `TLS_VERIFY=0`, después de recrear el servicio con la CA incorporada a la imagen.
+- [ ] Validar autenticación API de Gitea desde un Pipeline sin exponer tokens en consola/logs.
 
-**Nota de estado:** la corrección está guardada y validada en el archivo Compose operativo, pero aún no se ha aplicado al contenedor en ejecución. La prueba API inicial no llegó a TLS ni autenticación por el fallo de resolución DNS. No se modificaron DNS institucionales ni OPNsense.
+**Estado actualizado (26-nov-2026):** `extra_hosts` ya está aplicado y verificado en el contenedor Jenkins; el hostname resuelve a `10.129.100.2`. La CA raíz ENCiT se incorporó al Dockerfile local, la imagen se reconstruyó y Jenkins se recreó conservando su volumen. HTTPS desde el contenedor responde `HTTP=200` con `TLS_VERIFY=0`, sin `-k`. La prueba inicial de API no llegó a TLS ni autenticación por el fallo DNS que ya fue corregido. Siguen pendientes la prueba API autenticada, login y push/pull del Registry y validación independiente de Docker-in-Docker. No se modificaron DNS institucionales ni OPNsense.
