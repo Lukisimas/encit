@@ -29,7 +29,7 @@
 - [x] Volumen `/data` comprobado: `/dev/sdb1`, ext4, UUID `5d642b08-fac8-48fa-8f9b-5976c66af37c`, montado correctamente.
 - [x] Estado inicial previo al bootstrap comprobado: red `encit_prod_edge` y directorios base aún no existen; el script los crea.
 - [x] Ejecutar manualmente `repos/infrastructure/bootstrap/prepare-production-host.sh` como root; el administrador reportó el mensaje final esperado sin errores.
-- [ ] Verificar directorios, propietarios/permisos y red `encit_prod_edge` tras el bootstrap (pendiente inspección posterior).
+- [x] Verificar directorios, propietarios/permisos y red `encit_prod_edge` tras el bootstrap; directorios y modos coinciden con el diseño. Pendiente revisar solapamiento de la subred Docker `172.18.0.0/16` con rutas institucionales/VPN.
 - [ ] Variables de producción preparadas fuera de Git.
 - [ ] Imagen OJS identificada por tag probado en TEST.
 - [ ] MariaDB inicia y supera healthcheck.
