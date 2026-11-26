@@ -131,16 +131,44 @@ rtt min/avg/max/mdev = 0.199/0.233/0.264/0.023 ms
 | RTT máximo | 0.264 ms |
 | TTL observado | 64 |
 
-**Conclusión:** el servidor de producción puede comunicarse por IP con el gateway `10.129.101.1` de la VLAN 51. La conectividad local servidor-gateway queda comprobada. Esta prueba no demuestra todavía que exista salida a Internet ni valida los Port Forward públicos; tampoco sustituye las pruebas TCP externas que se realizarán cuando haya servicios escuchando.
+**Conclusión:** el servidor de producción puede comunicarse por IP con el gateway `10.129.101.1` de la VLAN 51. La conectividad local servidor-gateway queda comprobada.
 
-**Siguiente comprobación:** probar conectividad hacia una dirección IP pública desde el servidor. Si ICMP está filtrado en el destino o en el trayecto, el resultado deberá interpretarse junto con una prueba TCP/HTTPS y no como evidencia aislada de falta de salida.
+### Prueba de salida IP a Internet
 
-**Pendiente:** comprobar salida de red desde el servidor de producción antes de instalar servicios. Esta comprobación debe hacerse separadamente de las pruebas HTTP/HTTPS.
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Equipo:** servidor de producción  
+**Comando ejecutado:** `ping -c 4 1.1.1.1`; el administrador interrumpió la prueba después de recibir dos respuestas (`Ctrl+C`).
+
+Resultado reportado:
+
+```text
+PING 1.1.1.1 (1.1.1.1) 56(84) bytes of data.
+64 bytes from 1.1.1.1: icmp_seq=1 ttl=54 time=4.09 ms
+64 bytes from 1.1.1.1: icmp_seq=2 ttl=54 time=4.10 ms
+^C
+--- 1.1.1.1 ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 4.088/4.095/4.103/0.007 ms
+```
+
+| Métrica | Resultado |
+|---|---:|
+| Paquetes transmitidos | 2 |
+| Paquetes recibidos | 2 |
+| Pérdida | 0 % |
+| RTT mínimo | 4.088 ms |
+| RTT promedio | 4.095 ms |
+| RTT máximo | 4.103 ms |
+| TTL observado | 54 |
+
+**Conclusión:** el servidor de producción tiene conectividad IP hacia una dirección pública de Internet (`1.1.1.1`). La prueba fue interrumpida manualmente tras dos respuestas, ambas satisfactorias. Esto valida salida IP/ICMP; no comprueba por sí sola resolución DNS desde el servidor, acceso HTTP/HTTPS, ni publicación entrante de los puertos 80/443.
+
+**Estado de conectividad de red:** interfaz y ruta predeterminada revisadas; gateway de VLAN 51 alcanzable; salida IP a Internet comprobada. Se puede continuar con las comprobaciones de firewall local y preparación del servicio web, manteniendo las pruebas de publicación entrante para cuando exista un listener.
 
 ## Validaciones pendientes en el orden correcto
 
-1. Comprobar conectividad IP del servidor de producción con el gateway `10.129.101.1` y la salida de red.
-2. Preparar el servidor de producción e instalar/configurar el proxy inverso.
+1. Revisar el firewall local del servidor y preparar el servidor de producción.
+2. Instalar/configurar el proxy inverso cuando se autorice.
 3. Confirmar que el proxy escucha en los puertos previstos y que el firewall local permite el tráfico correspondiente.
 4. Repetir las pruebas desde una red externa:
    ```powershell
@@ -161,7 +189,7 @@ rtt min/avg/max/mdev = 0.199/0.233/0.264/0.023 ms
 - [x] Regla WAN automática de HTTPS confirmada (Pass, habilitada, destino `10.129.101.2:443`).
 - [x] Configuración IP de `ens15f0` y ruta predeterminada revisadas; coinciden con `10.129.101.2/28` vía `10.129.101.1`.
 - [x] Conectividad IP del servidor de producción con el gateway `10.129.101.1` comprobada mediante `ping -c 4` (4/4 respuestas, 0 % de pérdida, RTT promedio 0.233 ms).
-- [ ] Salida de red/Internet desde el servidor de producción comprobada.
+- [x] Salida IP a Internet desde el servidor de producción comprobada mediante `ping` a `1.1.1.1` (2/2 respuestas, 0 % de pérdida, RTT promedio 4.095 ms; prueba interrumpida manualmente tras dos respuestas).
 - [ ] Firewall local del servidor revisado.
 - [ ] Servicios de producción instalados y listeners HTTP/HTTPS activos.
 - [ ] TCP/80 comprobado desde una red externa después de instalar el proxy.
