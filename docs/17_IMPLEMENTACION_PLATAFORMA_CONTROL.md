@@ -516,3 +516,16 @@ Se creó el repositorio privado `encit/revista` dentro de la organización insti
 La consulta anónima a la API de Gitea devolvió HTTP 404 para los metadatos. Como el repositorio es privado, ese resultado no demuestra que el repositorio no exista; el administrador confirmó que puede abrirlo autenticado desde la interfaz web.
 
 **Pendiente inmediato:** agregar `README.md` y `.gitignore` con reglas específicas para OJS/PHP/Docker, y confirmar el primer commit en `main`. Después se realizará el inventario de archivos y se inspeccionará el contenido real. No se ha creado todavía Jenkinsfile, Dockerfile ni Compose de OJS.
+
+
+### Inicialización del repositorio de Xitle completada (26-nov-2026)
+
+El repositorio privado `encit/revista` fue inicializado y publicado correctamente en la rama `main`.
+
+- Commit raíz: `9d1f0ce`.
+- Mensaje: `docs: inicializar repositorio de Revista Xitle`.
+- Autor: Alan Uriel Gil Casas (`alan.gil@encit.unam.mx`).
+- Archivos iniciales: `README.md` y `.gitignore`.
+- La salida de `git ls-tree --name-only HEAD` confirmó ambos archivos y el `git push origin main` confirmó la creación de la rama remota.
+
+La identidad de Git se configuró localmente en este repositorio; no se cambió la configuración global del host. El repositorio ya no está vacío. El siguiente paso es inspeccionar su árbol y contenido antes de incorporar Dockerfile, Compose, Jenkinsfile o código OJS. No se ha desplegado OJS.
