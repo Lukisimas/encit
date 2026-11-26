@@ -1,6 +1,6 @@
 # Índice de archivos
 
-Total: **191 archivos**.
+Total: **192 archivos**.
 
 ## Estructura
 
@@ -26,6 +26,7 @@ docs/11_CAMBIOS_RESPECTO_ZIPS_ANTERIORES.md
 docs/12_VALIDACION_PAQUETE.md
 docs/13_ALMACENAMIENTO_PRODUCCION.md
 docs/14_CERTBOT_XITLE_BOOTSTRAP.md
+docs/15_VALIDACION_PUBLICA_XITLE.md
 repos/cursos/Dockerfile
 repos/cursos/README.md
 repos/cursos/astro.config.mjs
