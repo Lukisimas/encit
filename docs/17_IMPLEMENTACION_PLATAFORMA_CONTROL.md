@@ -606,3 +606,13 @@ En TEST se descargaron e inspeccionaron las siguientes imágenes oficiales:
 - mariadb:11.8.9: versión 1:11.8.9+maria~ubu2404, digest sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc; cuenta mysql = UID:GID 999:999.
 
 La etiqueta MariaDB 11.8.10 inicialmente contemplada no se confirmó; se usó 11.8.9. Las comprobaciones de identidad ejecutaron shells temporales sin volúmenes ni servicios persistentes. No se modificaron directorios del host. Confirmar usuario efectivo después del entrypoint y validar escritura en volúmenes de TEST antes de cambiar permisos en PROD. Preferir referencias por digest para reproducibilidad.
+
+## Validación de procesos efectivos de Apache y MariaDB (26-nov-2026)
+
+Prueba temporal en TEST, sin red, puertos publicados ni volúmenes del host:
+
+- Apache inició correctamente. El proceso maestro opera como root (0:0) y los procesos worker como www-data (33:33).
+- MariaDB 11.8.9 inició y superó el healthcheck de inicialización; el proceso mariadbd opera como mysql (999:999).
+- Los contenedores temporales fueron configurados para eliminarse al finalizar. No se tocaron los directorios persistentes ni permisos de PROD.
+
+Quedan confirmados los UID/GID efectivos de escritura: workers Apache 33:33 y proceso MariaDB 999:999. Aplicar permisos sólo a los directorios que correspondan a cada montaje y después de validar el mapeo definitivo de OJS.
