@@ -142,3 +142,14 @@ El documento describe una arquitectura propuesta; no implica que exista ya un Je
 - [ ] Definir e incorporar Dockerfile, Compose, configuración no secreta, pruebas y Jenkinsfile según la inspección y el diseño aprobado.
 
 La API consultada sin autenticación respondió HTTP 404; no se interpreta como inexistencia porque el repositorio es privado y el administrador confirmó acceso autenticado. El repositorio todavía no contiene `README.md` según la inspección visual reportada. No se ha implementado ni desplegado OJS.
+
+
+### Repositorio Gitea de Revista Xitle inicializado (26-nov-2026)
+
+- [x] Crear y publicar el primer commit en la rama `main` del repositorio privado `encit/revista`.
+- [x] Incorporar `README.md` y `.gitignore`.
+- [x] Verificar la publicación mediante `git push origin main` y el árbol del commit.
+
+Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. Autor: Alan Uriel Gil Casas (`alan.gil@encit.unam.mx`). La identidad Git se configuró sólo a nivel local del repositorio.
+
+**Pendiente:** inspeccionar el árbol y los archivos reales antes de diseñar e incorporar Dockerfile, Compose, Jenkinsfile y componentes OJS. La inicialización del repositorio no equivale a tener OJS instalado ni desplegado.
