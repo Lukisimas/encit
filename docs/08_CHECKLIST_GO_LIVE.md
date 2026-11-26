@@ -240,3 +240,13 @@ La inspección de almacenamiento fue de solo lectura. Las rutas de PROD ya exist
 - [ ] Fijar los digests de imagen en la definición de despliegue y validar el paquete OJS y sus requisitos de PHP/extensiones.
 
 Las inspecciones de identidad se realizaron en shells temporales, sin volúmenes ni servicios persistentes. No se modificaron directorios del host ni permisos de PROD.
+
+### Comprobación de UID/GID efectivos después del entrypoint (26-nov-2026)
+
+- [x] Iniciar Apache temporal en TEST y comprobar proceso maestro root (0:0) y workers www-data (33:33).
+- [x] Iniciar MariaDB 11.8.9 temporal en TEST, superar healthcheck y comprobar mariadbd como mysql (999:999).
+- [x] Ejecutar la prueba sin red, puertos publicados ni montajes del host; no modificar permisos ni datos de PROD.
+- [ ] Validar el mapeo definitivo de volúmenes de OJS y aplicar sólo los permisos mínimos requeridos en TEST.
+- [ ] Repetir validación de lectura/escritura con los volúmenes montados antes de modificar permisos en PROD.
+
+La prueba confirma las identidades efectivas de los procesos; no equivale todavía a una prueba de escritura sobre los directorios persistentes.
