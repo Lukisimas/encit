@@ -52,7 +52,7 @@ La implementación seleccionada es el Container Registry integrado en Gitea Pack
 
 La ruta exacta de imagen, namespace, permisos y credenciales debe definirse con las cuentas y organizaciones reales. No registrar tokens ni contraseñas en Git.
 
-**Estado:** habilitado en el Compose del repositorio. La inspección del host no pudo leer los valores filtrados de `app.ini` porque el comando `awk` terminó con error de sintaxis. Por tanto, falta confirmar la configuración efectiva del contenedor y probar una operación de login/pull/push en una ventana autorizada. No se ha demostrado todavía una publicación real desde Jenkins.
+**Estado:** habilitado y confirmado en runtime. La inspección de sólo lectura encontró `packages.ENABLED=true` en `/data/gitea/conf/app.ini` y `GITEA__packages__ENABLED=true` en el entorno del contenedor. Ambos indicadores coinciden. Esta comprobación confirma que la función está habilitada en la configuración efectiva; no demuestra todavía autenticación, permisos, login, push/pull ni publicación desde Jenkins. Esas operaciones requieren una prueba controlada posterior.
 
 ## 3. Jenkins y Docker-in-Docker
 
@@ -182,7 +182,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 | Seis contenedores observados activos en el host | Observado |
 | PostgreSQL y Mailpit healthy en la salida | Observado |
 | Persistencia de Gitea y Jenkins | Montajes observados |
-| Gitea Packages habilitado en Compose | Implementado; runtime pendiente |
+| Gitea Packages habilitado en Compose y runtime | Confirmado: `app.ini` y variable de entorno indican `true` |
 | SSH de Gitea publicado en TCP/2222 | Declarado en Compose e inventariado |
 | Jenkins con Docker CLI y JDK 21 | Declarado en Dockerfile |
 | Docker-in-Docker con TLS y volumen persistente | Declarado; montajes observados |
@@ -197,7 +197,7 @@ La inspección anterior reportó que `encit_control_edge` usa `172.18.0.0/16`; l
 
 ## 10. Siguientes pasos recomendados (sólo lectura inicialmente)
 
-1. Corregir la extracción de parámetros no sensibles de `app.ini` y confirmar Gitea Packages en runtime sin mostrar secretos.
+1. Definir una prueba controlada de autenticación y publicación/descarga de una imagen de prueba en Gitea Container Registry; no usar todavía imágenes productivas.
 2. Diseñar el pipeline CI/CD real para OJS y decidir su ubicación (Jenkinsfile versionado en el repositorio); no reutilizar `prueba-gitea` como pipeline de despliegue.
 3. Comparar plugins instalados con `plugins.txt` y decidir si el archivo versionado debe declarar explícitamente el plugin `gitea` y los demás requeridos.
 4. Verificar versión Java y conectividad TLS Jenkins → Docker-in-Docker y Jenkins → Gitea, sin publicar secretos.
