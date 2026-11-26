@@ -371,3 +371,46 @@ La configuración efectiva de Compose se validó con `sudo docker compose config
 5. Validar por separado el tipo y uso de la credencial Gitea Personal Access Token y la credencial Secret text.
 
 No se modificaron DNS institucionales, OPNsense ni redes Docker. No se revelaron ni documentaron valores de credenciales. La prueba inicial de autenticación quedó **sin ejecutar efectivamente** debido al fallo DNS.
+
+
+### Resolución y confianza TLS persistentes desde Jenkins
+
+**Fecha:** 26 de noviembre de 2026  
+**Host:** `pruebas` — `10.129.100.2/28`  
+**Servicio:** `encit-control-platform-jenkins-1`  
+**Contexto de construcción:** `/srv/encit/platform/control/jenkins`  
+**Compose operativo:** `/srv/encit/platform/control/docker-compose.yml`
+
+#### Resolución interna
+
+Se aplicó la configuración `extra_hosts` del servicio Jenkins y se recreó únicamente ese servicio mediante `sudo docker compose up -d --no-deps --no-build jenkins`. La inspección del contenedor confirmó `git.infra.encit.unam.mx:10.129.100.2` y `getent ahostsv4` devolvió `10.129.100.2`. El contenedor quedó `Running=true`. No se modificaron DNS institucionales ni OPNsense.
+
+#### Confianza TLS
+
+La CA raíz `ENCiT Internal Root CA` se encontró en el host en `/usr/local/share/ca-certificates/encit-internal-root-ca.crt`. Se verificó su sujeto/emisor y se obtuvo la huella SHA-256:
+
+`3dd2b8219386495e2f651b1d091e83007191a07f6a4618cc762f7d56e6feceb5`
+
+La CA se copió al contexto local de construcción `/srv/encit/platform/control/jenkins/encit-internal-root-ca.crt`; las huellas del original y la copia coincidieron. Este archivo se mantiene local en el host de control y no debe agregarse al repositorio público.
+
+El Dockerfile local de Jenkins se modificó para copiar el certificado a `/usr/local/share/ca-certificates/encit-internal-root-ca.crt` y ejecutar `update-ca-certificates` durante la construcción, bajo `USER root`. La imagen se reconstruyó correctamente:
+
+- Imagen: `encit-control-platform-jenkins`
+- ID: `sha256:6db69f3b28ea6b3d3e542137c9fc366c4e2cb386ef034621e8607620e20761fb`
+
+Se recreó únicamente Jenkins con `sudo docker compose up -d --no-deps --no-build jenkins`, conservando el volumen persistente `/srv/encit/data/jenkins/home`. Después de la recreación, desde el contenedor nuevo se ejecutó `curl` a `https://git.infra.encit.unam.mx/` sin `-k` y sin credenciales. Resultado:
+
+| Comprobación | Resultado |
+|---|---|
+| Estado del contenedor | `Running=true` |
+| Resolución del hostname | `10.129.100.2` |
+| HTTP | `200` |
+| TLS verify result | `0` |
+
+Una prueba temporal anterior dentro del contenedor confirmó que `update-ca-certificates` requiere privilegios root; ejecutada como root, agregó una CA. La solución definitiva quedó incorporada en el Dockerfile y en la imagen reconstruida, por lo que no depende de la modificación temporal del contenedor anterior.
+
+#### Alcance y pendientes
+
+La resolución interna y la confianza TLS desde el contenedor Jenkins están confirmadas después de recrearlo. Esto todavía no demuestra que la API autenticada de Gitea funcione ni que el Container Registry acepte login, push o pull. La siguiente validación debe ejecutarse desde un Pipeline, primero contra un endpoint público de salud/API sin credenciales y después con la credencial técnica mediante un mecanismo que no imprima el token. Docker-in-Docker y sus operaciones de build/push se validarán por separado.
+
+No se imprimieron ni documentaron secretos. No se modificaron DNS institucionales, OPNsense, Gitea ni Docker-in-Docker.
