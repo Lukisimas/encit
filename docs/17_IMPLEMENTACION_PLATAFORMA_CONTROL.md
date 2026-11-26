@@ -544,3 +544,17 @@ En la inspección de sólo lectura se localizaron tres directorios:
 El usuario confirmó expresamente que todavía no ha clonado el repositorio en TEST. Por tanto, no se debe asumir que el repositorio remoto está disponible como working tree local. Tampoco debe crearse o clonarse encima de alguna ruta candidata sin inspeccionar primero su contenido y acordar el destino.
 
 **Pendiente:** inspeccionar de forma no destructiva las rutas candidatas, definir una ubicación de trabajo y clonar allí el repositorio remoto. Después verificar rama, SHA, estado limpio y archivos. No se ha desplegado OJS.
+
+
+## Estado vigente de Revista Xitle tras el diseño técnico (26-nov-2026)
+
+La arquitectura integral de OJS está documentada en [docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md](19_DISENO_TECNICO_REVISTA_XITLE_OJS.md). La documentación separa el estado real de la plataforma de control del trabajo futuro de la aplicación.
+
+- Gitea y Jenkins ya validaron integración autenticada y push/pull de una imagen temporal en el Container Registry.
+- El repositorio privado encit/revista existe en Gitea, rama main, con archivos iniciales README.md y .gitignore.
+- El repositorio no contiene todavía código OJS, Dockerfile, Compose, Jenkinsfile, plugins ni configuración ejecutable.
+- No hay una copia local clonada en TEST confirmada por el administrador.
+- No se ha instalado ni desplegado OJS en TEST o PROD.
+- El siguiente paso es revisar/aprobar el diseño técnico y después iniciar la implementación. No clonar para inspeccionar una aplicación inexistente ni reutilizar rutas de servidor sin inspección previa.
+
+Esta sección aclara el estado de la aplicación; no altera ni invalida las pruebas ya documentadas de Gitea, Jenkins y Registry.
