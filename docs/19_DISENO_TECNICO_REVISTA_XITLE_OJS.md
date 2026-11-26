@@ -2,9 +2,9 @@
 
 **Fecha:** 26 de noviembre de 2026  
 **Estado:** diseño técnico propuesto; no implementado ni desplegado  
-**Repositorio documental:** \`Lukisimas/encit\`  
-**Rama documental:** \`docs/storage-xitle-hostnames\`  
-**Repositorio de aplicación:** Gitea privado \`encit/revista\`, rama \`main\`
+**Repositorio documental:** `Lukisimas/encit`  
+**Rama documental:** `docs/storage-xitle-hostnames`  
+**Repositorio de aplicación:** Gitea privado `encit/revista`, rama `main`
 
 > Este documento es la referencia técnica principal para construir Revista Xitle. Describe una arquitectura objetivo y decisiones recomendadas. No afirma que existan Dockerfiles, Compose, imágenes OJS, contenedores, bases de datos o instalaciones de OJS en TEST o PROD.
 
@@ -28,14 +28,14 @@ No incluye todavía: instalación de OJS, creación de contenedores, modificaci�
 
 | Elemento | Estado |
 |---|---|
-| Host de control/DEV/TEST | \`pruebas\`, \`10.129.100.2/28\`, VLAN 50 |
-| Gateway VLAN 50 | \`10.129.100.1\` |
-| Host de PROD | \`10.129.101.2/28\`, VLAN 51 |
-| Gateway VLAN 51 | \`10.129.101.1\` |
-| Publicación de Xitle | \`xitle.encit.unam.mx\` → \`132.247.168.166\` |
-| NAT TCP/80 y TCP/443 | OPNsense hacia \`10.129.101.2\`, comprobado previamente |
-| Gitea | \`https://git.infra.encit.unam.mx\`, alojado en TEST |
-| Repositorio de aplicación | \`encit/revista\`, privado, rama \`main\`; sólo inicializado |
+| Host de control/DEV/TEST | `pruebas`, `10.129.100.2/28`, VLAN 50 |
+| Gateway VLAN 50 | `10.129.100.1` |
+| Host de PROD | `10.129.101.2/28`, VLAN 51 |
+| Gateway VLAN 51 | `10.129.101.1` |
+| Publicación de Xitle | `xitle.encit.unam.mx` → `132.247.168.166` |
+| NAT TCP/80 y TCP/443 | OPNsense hacia `10.129.101.2`, comprobado previamente |
+| Gitea | `https://git.infra.encit.unam.mx`, alojado en TEST |
+| Repositorio de aplicación | `encit/revista`, privado, rama `main`; sólo inicializado |
 | Jenkins / Gitea Registry | Integración autenticada y push/pull de imagen de prueba validados |
 | OJS | No instalado; no hay imagen ni Compose de OJS verificados |
 | CI/CD de OJS | Diseño pendiente de implementación |
@@ -48,7 +48,7 @@ Los datos de red describen la infraestructura documentada. Cualquier cambio de r
 
 | ID | Decisión propuesta | Motivo / condición |
 |---|---|---|
-| ADR-XTL-01 | Adoptar la línea OJS 3.5.x, fijando el último parche estable disponible al construir | Línea LTS con mantenimiento activo; nunca usar \`latest\` |
+| ADR-XTL-01 | Adoptar la línea OJS 3.5.x, fijando el último parche estable disponible al construir | Línea LTS con mantenimiento activo; nunca usar `latest` |
 | ADR-XTL-02 | Construir una imagen propia desde el paquete oficial de distribución PKP | Controlar PHP, extensiones, Apache, permisos y procedencia |
 | ADR-XTL-03 | Apache + PHP en el contenedor web de OJS | OJS soporta Apache; reduce la complejidad frente a PHP-FPM más otro servidor web interno |
 | ADR-XTL-04 | Base de datos lógica y credenciales dedicadas por entorno; evaluar primero el MySQL institucional existente en PROD | Reutilizar el servicio MySQL si su versión exacta cumple los requisitos PKP y puede aislarse; si no, desplegar MariaDB compatible |
@@ -72,7 +72,7 @@ Como referencia al 26 de noviembre de 2026, el repositorio de PKP registra el hi
 Reglas de versionado:
 
 - Fijar versión exacta de OJS, no una rama flotante.
-- Descargar el paquete oficial de distribución, no construir producción desde la rama \`main\` del repositorio de desarrollo.
+- Descargar el paquete oficial de distribución, no construir producción desde la rama `main` del repositorio de desarrollo.
 - Registrar URL de origen y SHA-256 del paquete.
 - Validar el checksum antes de extraer el código.
 - Registrar versión de plugins y tema, junto con su compatibilidad explícita con esa versión de OJS.
@@ -80,12 +80,12 @@ Reglas de versionado:
 
 ### 3.2 PHP y extensiones
 
-OJS 3.5 requiere PHP 8.2 o posterior. La guía oficial de inicio de PKP señala expresamente PHP 8.2+ y extensiones \`mbstring\`, \`xml\` e \`intl\`. El README oficial del proyecto muestra, además, requisitos de plataforma como \`curl\`, \`dom\`, \`fileinfo\`, \`gd\`, \`intl\`, \`mbstring\`, \`openssl\`, \`simplexml\`, \`xml\`, \`xmlwriter\`, \`zip\` y \`zlib\`; la lista exacta se debe obtener del paquete y verificar con Composer para la versión fijada.
+OJS 3.5 requiere PHP 8.2 o posterior. La guía oficial de inicio de PKP señala expresamente PHP 8.2+ y extensiones `mbstring`, `xml` e `intl`. El README oficial del proyecto muestra, además, requisitos de plataforma como `curl`, `dom`, `fileinfo`, `gd`, `intl`, `mbstring`, `openssl`, `simplexml`, `xml`, `xmlwriter`, `zip` y `zlib`; la lista exacta se debe obtener del paquete y verificar con Composer para la versión fijada.
 
 Propuesta inicial:
 
 - PHP 8.2 como mínimo de compatibilidad.
-- Evaluar PHP 8.3 como versión de runtime, sólo después de ejecutar \`composer check-platform-reqs\` y las pruebas funcionales con el paquete exacto.
+- Evaluar PHP 8.3 como versión de runtime, sólo después de ejecutar `composer check-platform-reqs` y las pruebas funcionales con el paquete exacto.
 - Fijar la imagen base por versión y digest.
 - Mantener iguales PHP y extensiones en TEST y PROD.
 - Verificar por separado la configuración de PHP web y CLI: límites de memoria, tiempo de ejecución, tamaño de carga, zona horaria y extensiones.
@@ -117,7 +117,7 @@ En cualquiera de las alternativas:
 
 ### 4.1 Diagrama
 
-\`\`\`mermaid
+```mermaid
 flowchart TB
   U["Lectores, autores y editores"] --> WAN["Internet"]
   WAN --> FW["OPNsense NAT TCP 80/443"]
@@ -133,7 +133,7 @@ flowchart TB
   TWEB --> TDB[("MariaDB TEST")]
   TWEB --> TFILES[("Archivos TEST")]
   J -->|"aprobación + mismo digest"| EDGE
-\`\`\`
+```
 
 El diagrama es conceptual. No representa todavía redes Docker, puertos internos, rutas de host ni una conectividad Jenkins → PROD ya comprobada.
 
@@ -141,13 +141,13 @@ El diagrama es conceptual. No representa todavía redes Docker, puertos internos
 
 | Componente | TEST — VLAN 50 | PROD — VLAN 51 |
 |---|---|---|
-| Host físico | \`10.129.100.2\` | \`10.129.101.2\` |
+| Host físico | `10.129.100.2` | `10.129.101.2` |
 | OJS web | Compose de prueba aislado | Compose de producción |
 | Base de datos | MariaDB TEST | MariaDB PROD |
 | Archivos privados | Almacenamiento exclusivo TEST | Almacenamiento exclusivo PROD |
 | Configuración | Archivo local protegido TEST | Archivo local protegido PROD |
 | Proxy | Nombre interno de prueba por definir | Nginx de producción |
-| TLS | Certificado interno si se publica por HTTPS interno | Certificado válido para \`xitle.encit.unam.mx\` |
+| TLS | Certificado interno si se publica por HTTPS interno | Certificado válido para `xitle.encit.unam.mx` |
 | SMTP | Mailpit o relay de pruebas | Relay SMTP institucional |
 | Backups | Datos descartables o respaldos de prueba | Política formal y restauración ensayada |
 | Imagen OJS | Digest candidato | Mismo digest aprobado |
@@ -158,7 +158,7 @@ TEST comparte host físico con Gitea y Jenkins. Por ello debe ser un proyecto Co
 
 ### 5.1 Servicios iniciales
 
-**Servicio \`ojs-web\`**
+**Servicio `ojs-web`**
 
 - Imagen propia basada en Apache + PHP compatible con OJS.
 - Código OJS incluido en la imagen, inmutable durante la ejecución.
@@ -168,13 +168,13 @@ TEST comparte host físico con Gitea y Jenkins. Por ello debe ser un proyecto Co
 - Directorios de caché y escritura con permisos explícitos para el usuario del proceso web.
 - Healthcheck HTTP local que compruebe que Apache y OJS responden.
 
-**Servicio \`mariadb\`**
+**Servicio `mariadb`**
 
 - Imagen oficial fijada por versión/digest.
 - Volumen persistente exclusivo.
 - Healthcheck con herramienta de cliente incluida en la imagen.
 - Red privada compartida sólo con OJS.
-- Sin \`ports:\` publicados al host.
+- Sin `ports:` publicados al host.
 - Usuario de aplicación separado del usuario administrativo de base de datos.
 
 **Servicio scheduler**
@@ -196,7 +196,7 @@ Se requieren dos segmentos lógicos:
 1. **Red de aplicación:** OJS y MariaDB. No debe ser una red enrutable desde Internet. MariaDB sólo acepta conexiones desde OJS y herramientas administrativas autorizadas.
 2. **Red de borde:** sólo OJS web conectado al proxy Nginx existente. La base de datos no debe pertenecer a esta red.
 
-La red de borde debe reutilizar la red de proxy de producción ya definida si su configuración real lo permite. Antes de conectar contenedores se debe revisar el Compose y las subredes efectivas. Está documentado un posible solapamiento de \`172.18.0.0/16\` entre redes Docker de control y producción; no asignar una nueva subred por suposición ni intentar enrutar redes solapadas.
+La red de borde debe reutilizar la red de proxy de producción ya definida si su configuración real lo permite. Antes de conectar contenedores se debe revisar el Compose y las subredes efectivas. Está documentado un posible solapamiento de `172.18.0.0/16` entre redes Docker de control y producción; no asignar una nueva subred por suposición ni intentar enrutar redes solapadas.
 
 El puerto 3306 no se publicará. El puerto Apache sólo será accesible desde el proxy y la red de aplicación autorizada.
 
@@ -206,8 +206,8 @@ El puerto 3306 no se publicará. El puerto Apache sólo será accesible desde el
 
 Flujo público previsto:
 
-1. \`xitle.encit.unam.mx\` resuelve a \`132.247.168.166\`.
-2. OPNsense realiza NAT TCP/80 y TCP/443 hacia \`10.129.101.2\`.
+1. `xitle.encit.unam.mx` resuelve a `132.247.168.166`.
+2. OPNsense realiza NAT TCP/80 y TCP/443 hacia `10.129.101.2`.
 3. Nginx en PROD recibe las conexiones.
 4. Nginx termina TLS y reenvía al contenedor web OJS por la red Docker de borde.
 5. OJS recibe el esquema/host original mediante cabeceras proxy confiables.
@@ -216,12 +216,12 @@ El administrador confirmó previamente DNS público y NAT. No es parte de este d
 
 ### 6.2 Certificado y cabeceras
 
-- Emitir u obtener un certificado válido para \`xitle.encit.unam.mx\`; no asumir que el wildcard interno de \`infra.encit.unam.mx\` cubre este dominio.
+- Emitir u obtener un certificado válido para `xitle.encit.unam.mx`; no asumir que el wildcard interno de `infra.encit.unam.mx` cubre este dominio.
 - No reutilizar la clave privada del certificado de infraestructura.
 - Redirigir HTTP a HTTPS.
 - Configurar TLS moderno, renovación y monitoreo de expiración.
-- Configurar \`trusted_hosts\`, URL base y parámetros proxy de OJS de acuerdo con el dominio real.
-- Confiar en \`X-Forwarded-Proto\` y \`X-Forwarded-Host\` sólo desde el proxy controlado; no aceptar cabeceras arbitrarias de clientes.
+- Configurar `trusted_hosts`, URL base y parámetros proxy de OJS de acuerdo con el dominio real.
+- Confiar en `X-Forwarded-Proto` y `X-Forwarded-Host` sólo desde el proxy controlado; no aceptar cabeceras arbitrarias de clientes.
 - Establecer límites de tamaño de petición coherentes entre Nginx y PHP.
 - Evitar almacenar caché pública de respuestas autenticadas, formularios editoriales o contenido privado.
 
@@ -236,22 +236,22 @@ La imagen contiene el código y las dependencias; los datos mutables viven fuera
 | Elemento | Persistencia | Exposición |
 |---|---|---|
 | Código OJS y plugins aprobados | Imagen OCI versionada | Sólo lectura en runtime |
-| \`config.inc.php\` | Archivo local por entorno, montado en runtime | Nunca en Git ni en capas de imagen |
+| `config.inc.php` | Archivo local por entorno, montado en runtime | Nunca en Git ni en capas de imagen |
 | Base de datos | Volumen/directorio persistente de MariaDB | Sólo red privada |
-| \`files_dir\` | Volumen/directorio persistente fuera del document root | No accesible por HTTP directo |
-| \`public/\` y recursos públicos cargados | Volumen persistente si la operación de OJS lo requiere | Sólo archivos destinados a publicación |
+| `files_dir` | Volumen/directorio persistente fuera del document root | No accesible por HTTP directo |
+| `public/` y recursos públicos cargados | Volumen persistente si la operación de OJS lo requiere | Sólo archivos destinados a publicación |
 | Caché y temporales | Directorios escribibles; reconstruibles | No respaldar como fuente primaria |
 | Logs | stdout/stderr y sistema de logs del host | Acceso administrativo |
 
-La ruta exacta en disco no se fija en este diseño. Antes de elegirla se debe inspeccionar el almacenamiento montado en ambos hosts, capacidad libre, sistema de archivos, rendimiento, política de snapshots y respaldos. En PROD se ha documentado un volumen \`/data\` montado; su uso para archivos de OJS es candidato, no una decisión cerrada hasta verificar capacidad, propósito y política de respaldo.
+La ruta exacta en disco no se fija en este diseño. Antes de elegirla se debe inspeccionar el almacenamiento montado en ambos hosts, capacidad libre, sistema de archivos, rendimiento, política de snapshots y respaldos. La arquitectura física de producción contempla un SSD de 480 GB y un HDD de 72 TB; como orientación, la base de datos y componentes sensibles a latencia deberían evaluarse para el SSD, mientras que `files_dir` y los archivos editoriales de gran tamaño podrían residir en el HDD. Esta asignación es una recomendación de diseño, no una ruta o montaje confirmado. En PROD se ha documentado un volumen `/data` montado; su uso para archivos de OJS es candidato, no una decisión cerrada hasta verificar qué disco lo respalda, capacidad, propósito y política de respaldo.
 
-No guardar \`files_dir\` dentro del directorio público ni dentro de la imagen. Los documentos de envío, revisión y producción editorial pueden contener información no publicada y deben quedar fuera del document root.
+No guardar `files_dir` dentro del directorio público ni dentro de la imagen. Los documentos de envío, revisión y producción editorial pueden contener información no publicada y deben quedar fuera del document root.
 
 ## 8. Configuración y secretos
 
 - Mantener una configuración no secreta de referencia versionada, sin credenciales.
-- Montar \`config.inc.php\` desde una ruta local protegida o generarlo de forma controlada al desplegar.
-- No incluir valores reales en \`.env.example\`, Jenkinsfile, Dockerfile, manifiestos de release ni logs.
+- Montar `config.inc.php` desde una ruta local protegida o generarlo de forma controlada al desplegar.
+- No incluir valores reales en `.env.example`, Jenkinsfile, Dockerfile, manifiestos de release ni logs.
 - Credenciales de MariaDB distintas para TEST y PROD.
 - Contraseña administrativa inicial de OJS entregada por un mecanismo seguro y rotada al finalizar la instalación.
 - SMTP productivo con credenciales propias y TLS cuando el relay lo soporte.
@@ -262,11 +262,11 @@ No guardar \`files_dir\` dentro del directorio público ni dentro de la imagen. 
 
 ## 9. Contrato del repositorio Gitea
 
-Repositorio: \`https://git.infra.encit.unam.mx/encit/revista\`.
+Repositorio: `https://git.infra.encit.unam.mx/encit/revista`.
 
 Estructura objetivo recomendada:
 
-\`\`\`
+```
 revista/
 ├── README.md
 ├── .gitignore
@@ -290,13 +290,13 @@ revista/
     ├── ADR/
     ├── OPERACION.md
     └── BACKUP_RESTORE.md
-\`\`\`
+```
 
-Esta estructura es una propuesta, no un inventario del repositorio remoto. El paquete oficial de OJS no se debe versionar como código de terceros salvo que exista una razón de mantenimiento/licenciamiento explícita; el Dockerfile descargará una versión exacta y verificará su checksum. No almacenar datos, archivos editoriales, \`.env\`, certificados ni claves privadas en Git.
+Esta estructura es una propuesta, no un inventario del repositorio remoto. El paquete oficial de OJS no se debe versionar como código de terceros salvo que exista una razón de mantenimiento/licenciamiento explícita; el Dockerfile descargará una versión exacta y verificará su checksum. No almacenar datos, archivos editoriales, `.env`, certificados ni claves privadas en Git.
 
 ## 10. CI/CD Gitea–Jenkins
 
-La arquitectura de CI/CD ya está definida en \`docs/18_DISENO_CICD_XITLE_OJS.md\`. Este documento la concreta a nivel de aplicación.
+La arquitectura de CI/CD ya está definida en `docs/18_DISENO_CICD_XITLE_OJS.md`. Este documento la concreta a nivel de aplicación.
 
 ### 10.1 Flujo
 
@@ -318,12 +318,12 @@ La arquitectura de CI/CD ya está definida en \`docs/18_DISENO_CICD_XITLE_OJS.md
 
 Nombre lógico propuesto, pendiente de confirmar namespace de Packages:
 
-\`\`\`
+```
 git.infra.encit.unam.mx/encit/ojs:<GIT_COMMIT_SHA>
 git.infra.encit.unam.mx/encit/ojs@sha256:<OCI_DIGEST>
-\`\`\`
+```
 
-El digest es la identidad de despliegue. No usar \`latest\` ni reconstruir en PROD. El paquete temporal \`jenkins/registry-smoke-test:smoke-1\` es sólo una prueba de Registry y no representa una imagen de OJS.
+El digest es la identidad de despliegue. No usar `latest` ni reconstruir en PROD. El paquete temporal `jenkins/registry-smoke-test:smoke-1` es sólo una prueba de Registry y no representa una imagen de OJS.
 
 ### 10.3 Límites de confianza
 
@@ -387,7 +387,7 @@ ORCID, DOI/Crossref, ROR, preservación digital, antiplagio, estadísticas e ind
 2. No exponer MariaDB, PHP/Apache, Jenkins, Gitea ni Mailpit a Internet.
 3. No publicar puertos de base de datos en el host.
 4. Mantener la base de datos en red privada y usar cuentas con privilegios mínimos.
-5. Proteger \`files_dir\` fuera del document root.
+5. Proteger `files_dir` fuera del document root.
 6. Aplicar actualizaciones de seguridad de sistema base, PHP, Apache, MariaDB, OJS y plugins con ventana y respaldo.
 7. Escanear imagen y dependencias antes de liberar; elegir herramienta y política de severidad antes de convertirlo en bloqueo de pipeline.
 8. Usar imagen base mínima, paquetes fijados, usuario no privilegiado cuando sea compatible con el paquete y permisos explícitos.
@@ -401,7 +401,7 @@ ORCID, DOI/Crossref, ROR, preservación digital, antiplagio, estadísticas e ind
 La unidad de respaldo no es sólo la base de datos. Deben coordinarse:
 
 - Base de datos MariaDB.
-- \`files_dir\` completo.
+- `files_dir` completo.
 - Directorios públicos persistentes que contengan archivos cargados o personalizados.
 - Configuración local de OJS, sin exponerla.
 - Versiones de imagen, plugins y manifiesto de release.
@@ -460,7 +460,7 @@ Antes de crear volúmenes:
 - [ ] Acceso de lector, autor, revisor, editor y administrador probado.
 - [ ] Envío de manuscrito de prueba y carga de archivos probados.
 - [ ] Flujo editorial de prueba recorrido hasta publicación.
-- [ ] \`files_dir\` no es accesible por URL directa.
+- [ ] `files_dir` no es accesible por URL directa.
 - [ ] Correo de prueba recibido en Mailpit.
 - [ ] Tareas programadas ejecutadas y verificadas.
 - [ ] Backup y restauración de TEST ensayados.
@@ -468,7 +468,7 @@ Antes de crear volúmenes:
 
 ### 15.3 PROD
 
-- [ ] Certificado TLS válido para \`xitle.encit.unam.mx\`.
+- [ ] Certificado TLS válido para `xitle.encit.unam.mx`.
 - [ ] Proxy, cabeceras y redirección HTTP→HTTPS verificados.
 - [ ] Secrets y configuración PROD independientes de TEST.
 - [ ] Backups recientes y restauración ensayada.
