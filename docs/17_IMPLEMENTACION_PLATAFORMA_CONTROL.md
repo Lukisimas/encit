@@ -597,3 +597,12 @@ Inspección de solo lectura ejecutada por el administrador en ambos hosts:
 - TEST: rutas propuestas, no creadas: `/srv/encit/data/revista/test/{mariadb,files,public,config,cache}`.
 
 No se crearon directorios, no se cambiaron permisos, no se descargaron imágenes ni se iniciaron contenedores durante esta inspección. La verificación de UID/GID de las imágenes exactas y sus digests permanece pendiente.
+
+## Verificación de imágenes y cuentas de servicio para Xitle (26-nov-2026)
+
+En TEST se descargaron e inspeccionaron las siguientes imágenes oficiales:
+
+- php:8.3-apache-bookworm: PHP 8.3.37, digest sha256:353569a793b80b5e7e90bd750f5939e21b9f2a96b22cf77d6fa86cb0fc23570f; cuenta www-data = UID:GID 33:33.
+- mariadb:11.8.9: versión 1:11.8.9+maria~ubu2404, digest sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc; cuenta mysql = UID:GID 999:999.
+
+La etiqueta MariaDB 11.8.10 inicialmente contemplada no se confirmó; se usó 11.8.9. Las comprobaciones de identidad ejecutaron shells temporales sin volúmenes ni servicios persistentes. No se modificaron directorios del host. Confirmar usuario efectivo después del entrypoint y validar escritura en volúmenes de TEST antes de cambiar permisos en PROD. Preferir referencias por digest para reproducibilidad.
