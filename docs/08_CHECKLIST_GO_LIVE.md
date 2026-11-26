@@ -122,7 +122,7 @@ La eliminación de los jobs temporales no elimina el paquete remoto `jenkins/reg
 
 - [x] Definir arquitectura objetivo build once/promote many, digest OCI inmutable, separación TEST/PROD, aprobación manual y rollback (ver `docs/18_DISENO_CICD_XITLE_OJS.md`).
 - [x] Documentar etapas, contrato de imagen, controles de seguridad y decisiones pendientes.
-- [ ] Inspeccionar estructura real de `repos/revista`, Dockerfile, Compose, scripts, versión OJS y plugins.
+- [x] Elaborar el diseño técnico de OJS, contenedores, redes, persistencia, seguridad, operación y CI/CD (ver `docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md`).
 - [ ] Definir namespace definitivo de imagen en Gitea y permisos mínimos.
 - [ ] Validar método de despliegue remoto Jenkins → TEST/PROD y host keys.
 - [ ] Implementar Jenkinsfile desde SCM y validar primero build/test/push.
@@ -161,7 +161,24 @@ Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. 
 - [x] Localizar rutas candidatas en TEST: `/home/administrador/encit_arquitectura_institucional/repos/revista`, `/srv/encit/apps/revista` y `/srv/encit/backups/revista`.
 - [x] Comprobar que la primera ruta no contiene `.git`; no es una copia Git verificada.
 - [ ] Inspeccionar contenido y propósito de `/srv/encit/apps/revista` y `/srv/encit/backups/revista` antes de usarlas.
-- [ ] Acordar una ubicación de trabajo y clonar `encit/revista` en el host TEST.
-- [ ] Verificar rama `main`, SHA del commit, `git status` y árbol de archivos en TEST.
+- [ ] Al iniciar la fase de implementación, acordar ubicación de trabajo y clonar `encit/revista` en TEST.
+- [ ] En la fase de implementación, verificar rama `main`, SHA del commit, `git status` y árbol de archivos en TEST.
 
 **Estado (26-nov-2026):** el repositorio remoto está publicado, pero todavía no está clonado en el servidor `pruebas` (TEST). La inspección terminó con “No se encontró una copia Git de revista en las rutas inspeccionadas”. No hay Dockerfile, Compose, Jenkinsfile ni instalación OJS local verificados en ese host.
+
+
+### Diseño técnico de Revista Xitle (26-nov-2026)
+
+- [x] Documentar arquitectura objetivo de OJS 3.5.x, PHP, MariaDB, Apache/PHP, Nginx, redes y persistencia.
+- [x] Definir separación de TEST/PROD y criterios de seguridad, backups, operación y aceptación.
+- [x] Definir el flujo CI/CD build once/promote many por digest OCI y aprobación manual de PROD.
+- [ ] Revisar y aprobar las decisiones técnicas y requisitos editoriales pendientes del documento docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md.
+- [ ] Inspeccionar capacidad y montajes de almacenamiento en ambos hosts antes de fijar rutas persistentes.
+- [ ] Iniciar la implementación en encit/revista después de aprobar el diseño; clonar será una actividad de implementación, no una condición para diseñar.
+- [ ] Fijar parche OJS, PHP y MariaDB exactos tras validar compatibilidad con el paquete oficial.
+- [ ] Construir imagen y Compose TEST; instalar y probar el flujo editorial.
+- [ ] Implementar Jenkinsfile y validar build/test/push/deploy TEST.
+- [ ] Ensayar backup/restauración de base de datos y archivos.
+- [ ] Preparar PROD y promover el mismo digest con autorización explícita.
+
+**Estado:** el diseño técnico está documentado, pero no está implementado. El repositorio remoto contiene únicamente su inicialización. No hay instalación OJS ni despliegue de Xitle confirmado.
