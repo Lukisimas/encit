@@ -414,3 +414,59 @@ Una prueba temporal anterior dentro del contenedor confirmó que `update-ca-cert
 La resolución interna y la confianza TLS desde el contenedor Jenkins están confirmadas después de recrearlo. Esto todavía no demuestra que la API autenticada de Gitea funcione ni que el Container Registry acepte login, push o pull. La siguiente validación debe ejecutarse desde un Pipeline, primero contra un endpoint público de salud/API sin credenciales y después con la credencial técnica mediante un mecanismo que no imprima el token. Docker-in-Docker y sus operaciones de build/push se validarán por separado.
 
 No se imprimieron ni documentaron secretos. No se modificaron DNS institucionales, OPNsense, Gitea ni Docker-in-Docker.
+
+
+### Integración Jenkins–Gitea y Container Registry validada
+
+**Fecha:** 26 de noviembre de 2026  
+**Host de control:** `pruebas` — `10.129.100.2/28`  
+**Jenkins:** agente `built-in`  
+**Daemon de builds:** Docker-in-Docker `docker:29-dind`
+
+Se completaron pruebas controladas desde Pipelines temporales de Jenkins, sin imprimir ni registrar los valores de los tokens.
+
+#### API de Gitea y conectividad desde Jenkins
+
+- El Pipeline de salud resolvió `git.infra.encit.unam.mx` a `10.129.100.2`.
+- La consulta HTTPS a `/api/healthz` devolvió `HTTP=200` y `TLS_VERIFY=0`.
+- La consulta autenticada a la API devolvió `HTTP=200` e identificó el login técnico `jenkins`.
+- La credencial Jenkins `gitea-jenkins-token` es de tipo Secret text. Se actualizó su valor para utilizar un token técnico con permisos de Packages; el secreto no se incorpora a esta documentación.
+
+#### Corrección DNS de Docker-in-Docker
+
+El cliente Docker de Jenkins utiliza el daemon remoto `tcp://docker-dind:2376`. Se comprobó que el contenedor Jenkins resolvía el hostname interno, pero el daemon DinD reenviaba consultas a DNS públicos `8.8.8.8` y `8.8.4.4`, que no conocen el dominio interno.
+
+La consulta desde el contenedor DinD confirmó que OPNsense, en `10.129.100.1`, responde correctamente con `git.infra.encit.unam.mx -> 10.129.100.2`; los DNS institucionales consultados devolvieron NXDOMAIN para ese hostname y la dirección del servidor Gitea no ofrece servicio DNS.
+
+Se modificó el Compose operativo local `/srv/encit/platform/control/docker-compose.yml`, agregando exclusivamente al servicio `docker-dind`:
+
+```yaml
+dns:
+  - 10.129.100.1
+```
+
+La configuración se validó con `sudo docker compose config -q` y se recreó únicamente `docker-dind` mediante `sudo docker compose up -d --no-deps docker-dind`. Después de la recreación, `nslookup git.infra.encit.unam.mx 10.129.100.1` desde el contenedor DinD devolvió `10.129.100.2`. No se modificaron DNS institucionales ni OPNsense.
+
+#### Permisos de Packages y prueba Registry
+
+El primer token revisado, `jenkins-encit-integration`, tenía los scopes `read:misc`, `read:repository` y `read:user`, sin permisos de Packages. Por ello el primer `docker login` alcanzó `/v2/` pero recibió `unauthorized`.
+
+Se generó un token técnico nuevo con `read:package` y `write:package`, además de los permisos que la integración requiera. Se actualizó la credencial Jenkins existente `gitea-jenkins-token` (Secret text, Global) sin revelar el valor. Después, `docker login` respondió `Login Succeeded`.
+
+Finalmente se ejecutó desde Jenkins una prueba completa sobre la imagen temporal:
+
+- Referencia: `git.infra.encit.unam.mx/jenkins/registry-smoke-test:smoke-1`.
+- Construcción local con Docker: correcta.
+- `docker push`: correcto.
+- Digest publicado: `sha256:7355685748d5f6c0af030b9cc154385b223b3050e481f4a0a1b46ae145af13a8`.
+- Eliminación de la copia local y `docker pull` posterior: correcto.
+- Inspección local de la imagen descargada: correcta.
+- Resultado final del Pipeline: `REGISTRY_PUSH_PULL=SUCCESS`.
+
+La imagen de prueba quedó publicada en Gitea como paquete remoto. El Pipeline eliminó la copia local al finalizar, pero no eliminó el paquete remoto. Su limpieza remota queda pendiente de autorización/decisión.
+
+#### Estado resultante
+
+Quedan confirmadas la resolución DNS interna desde Jenkins y desde Docker-in-Docker, la confianza TLS desde Jenkins, la consulta API autenticada y las operaciones de autenticación, publicación y descarga del Container Registry. Esto valida el canal técnico Jenkins → Gitea Packages para imágenes de prueba; todavía no valida un pipeline de OJS, la promoción de imágenes entre TEST y PROD, ni el despliegue de Xitle.
+
+La advertencia de Docker sobre almacenamiento no cifrado en el `config.json` temporal apareció durante `docker login`. El Pipeline usó un directorio temporal `DOCKER_CONFIG` y una limpieza `trap` al finalizar; no se mostró el token. También apareció el aviso deprecando el legacy builder; la construcción terminó correctamente. La adopción de BuildKit/buildx puede planearse por separado.
