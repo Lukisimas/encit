@@ -198,7 +198,17 @@ Se requieren dos segmentos lógicos:
 1. **Red de aplicación:** OJS y MariaDB. No debe ser una red enrutable desde Internet. MariaDB sólo acepta conexiones desde OJS y herramientas administrativas autorizadas.
 2. **Red de borde:** sólo OJS web conectado al proxy Nginx existente. La base de datos no debe pertenecer a esta red.
 
-La red de borde debe reutilizar la red de proxy de producción ya definida si su configuración real lo permite. Antes de conectar contenedores se debe revisar el Compose y las subredes efectivas. Está documentado un posible solapamiento de `172.18.0.0/16` entre redes Docker de control y producción; no asignar una nueva subred por suposición ni intentar enrutar redes solapadas.
+En TEST ya se inventariaron estas redes Docker:
+
+| Red | Subred | Uso observado |
+|---|---|---|
+| `encit_control_edge` | `172.18.0.0/16` | Red de borde de la plataforma de control |
+| Redes internas de control | `172.19.0.0/16`, `172.20.0.0/16`, `172.21.0.0/16` | Redes de servicios internos, Gitea y Jenkins egress |
+| `bridge` predeterminada | `172.17.0.0/16` | Red bridge de Docker |
+
+Para TEST, la propuesta es conectar únicamente `ojs-web` a `encit_control_edge` si se confirma que el proxy puede enrutar por esa red. MariaDB permanecerá sólo en la red privada del proyecto OJS. La red privada de Compose se creará sin fijar manualmente una subred/IPAM; Docker seleccionará un rango disponible. No conectar OJS ni MariaDB a las redes internas de Gitea/Jenkins y no reutilizar sus rangos.
+
+En PROD todavía debe inspeccionarse el diseño real de redes Docker y el punto de entrada Nginx antes de fijar el modo de conexión. No asumir que la red de TEST existe también en PROD ni crear subredes que puedan solaparse con redes ya asignadas.
 
 El puerto 3306 no se publicará. El puerto Apache sólo será accesible desde el proxy y la red de aplicación autorizada.
 
