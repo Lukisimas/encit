@@ -654,3 +654,14 @@ Inspección ejecutada en TEST (host pruebas) mediante imágenes oficiales, sin m
 - No se cambiaron propietarios/permisos de directorios del host, no se crearon volúmenes ni se desplegaron servicios.
 
 **Criterio provisional de permisos:** www-data = 33:33 para los directorios web que realmente requiera escribir la imagen OJS; mysql = 999:999 para el datadir MariaDB. Antes de aplicar chown en PROD, validar el entrypoint, el usuario efectivo del proceso y los requisitos concretos del montaje en un despliegue aislado de TEST.
+
+### Validación de UID/GID efectivos tras el arranque (26-nov-2026)
+
+Se ejecutaron contenedores temporales en TEST, con red none, sin puertos publicados y sin montar directorios del host. Ambos servicios arrancaron correctamente:
+
+- Apache, imagen php:8.3-apache-bookworm: proceso maestro `apache2 -DFOREGROUND` como root (UID:GID 0:0); procesos worker como www-data (UID:GID 33:33).
+- MariaDB, imagen mariadb:11.8.9: proceso `mariadbd` como mysql (UID:GID 999:999). El healthcheck de inicialización terminó satisfactoriamente.
+- Los contenedores se crearon sólo para la prueba y el bloque de ejecución incluyó su eliminación automática al finalizar.
+- No se montaron directorios persistentes, no se cambiaron propietarios/permisos del host y no se modificó PROD.
+
+**Conclusión:** queda confirmado que los workers de Apache usan 33:33 y que MariaDB ejecuta el proceso principal con 999:999. Para los directorios web que Apache deba escribir se considera www-data 33:33; para el datadir MariaDB, mysql 999:999. La asignación concreta de permisos debe respetar el principio de mínimo privilegio y el mapeo final de volúmenes OJS; no hacer un chown recursivo general de todos los directorios.
