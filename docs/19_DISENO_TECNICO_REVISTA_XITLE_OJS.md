@@ -642,3 +642,15 @@ PROD conserva MariaDB/configuración/caché en SSD y `files_dir`/archivos públi
 ### Pendiente antes de fijar permisos
 
 La identidad `www-data` del host no demuestra por sí sola que la imagen final use el mismo UID/GID. La identidad del proceso MariaDB tampoco debe suponerse. Se inspeccionarán las imágenes exactas y sus digests en TEST; después se validará el mapeo con los directorios host, sin cambiar aún permisos en PROD.
+
+### Verificación de imágenes base y UID/GID (26-nov-2026)
+
+Inspección ejecutada en TEST (host pruebas) mediante imágenes oficiales, sin montar volúmenes ni iniciar servicios persistentes:
+
+- PHP Apache: etiqueta php:8.3-apache-bookworm; versión PHP observada 8.3.37. Digest: php@sha256:353569a793b80b5e7e90bd750f5939e21b9f2a96b22cf77d6fa86cb0fc23570f. La cuenta www-data existe como UID:GID 33:33.
+- MariaDB: etiqueta exacta mariadb:11.8.9; versión de paquete observada 1:11.8.9+maria~ubu2404. Digest: mariadb@sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc. La cuenta mysql existe como UID:GID 999:999.
+- Ambas inspecciones de identidad se ejecutaron con shell temporal como root dentro de la imagen. Esto no demuestra por sí solo el UID efectivo de todos los procesos tras completar el entrypoint; debe comprobarse al validar el arranque real y los montajes.
+- La etiqueta MariaDB inicialmente propuesta 11.8.10 no se confirmó disponible; se sustituyó por 11.8.9, que sí se descargó. Para reproducibilidad, fijar los digests registrados y no depender sólo de etiquetas mutables.
+- No se cambiaron propietarios/permisos de directorios del host, no se crearon volúmenes ni se desplegaron servicios.
+
+**Criterio provisional de permisos:** www-data = 33:33 para los directorios web que realmente requiera escribir la imagen OJS; mysql = 999:999 para el datadir MariaDB. Antes de aplicar chown en PROD, validar el entrypoint, el usuario efectivo del proceso y los requisitos concretos del montaje en un despliegue aislado de TEST.
