@@ -558,3 +558,17 @@ La arquitectura integral de OJS está documentada en [docs/19_DISENO_TECNICO_REV
 - El siguiente paso es revisar/aprobar el diseño técnico y después iniciar la implementación. No clonar para inspeccionar una aplicación inexistente ni reutilizar rutas de servidor sin inspección previa.
 
 Esta sección aclara el estado de la aplicación; no altera ni invalida las pruebas ya documentadas de Gitea, Jenkins y Registry.
+
+
+## Decisiones técnicas revisadas: base de datos y almacenamiento Xitle (26-nov-2026)
+
+La revisión del inventario histórico de PROD y del inventario de redes de TEST queda incorporada en `docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md`.
+
+- PROD, inspeccionado el 21-nov-2026: SSD RAID1 `/dev/sda2` ext4, con aproximadamente 392 GB libres; HDD RAID5 `/dev/sdb1` ext4 montado persistentemente en `/data`, con aproximadamente 62 TB libres. Docker Root Dir: `/var/lib/docker`. No había contenedores Docker en ese inventario.
+- No se confirmó una instancia MySQL en PROD para reutilizar. La decisión de diseño es MariaDB 11.8.10 dedicada para OJS, con base/credenciales independientes en TEST y PROD; versión y digest se validarán en pruebas.
+- Rutas objetivo PROD (no creadas): datos MariaDB, configuración y caché en SSD bajo `/srv/encit/data/revista/prod`; archivos privados y públicos en HDD bajo `/data/encit/data/revista/prod`.
+- El HDD de PROD no se considera backup independiente. Se requiere una segunda ubicación de respaldo fuera del host.
+- TEST tiene redes Docker confirmadas: `encit_control_edge` 172.18.0.0/16 y redes de control 172.19.0.0/16, 172.20.0.0/16 y 172.21.0.0/16. OJS no debe conectarse a las redes internas de Gitea/Jenkins; la base de datos sólo estará en la red privada del proyecto.
+- No existe todavía inventario de discos, RAID, filesystem, montajes o capacidad del host TEST. No fijar rutas persistentes de OJS TEST hasta obtenerlo.
+
+Estos puntos son decisiones de diseño; no se crearon directorios, volúmenes ni servicios.
