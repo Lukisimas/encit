@@ -13,7 +13,7 @@
 - [x] Conectividad IP del servidor de producción con el gateway `10.129.101.1` comprobada: 4/4 respuestas, 0 % de pérdida, RTT promedio 0.233 ms (ver `docs/15_VALIDACION_PUBLICA_XITLE.md`).
 - [x] Salida IP a Internet desde el servidor de producción comprobada mediante `ping` a `1.1.1.1` (2/2 respuestas, 0 % de pérdida, RTT promedio 4.095 ms; prueba interrumpida manualmente tras dos respuestas; ver `docs/15_VALIDACION_PUBLICA_XITLE.md`).
 - [ ] Firewall local del servidor permite los puertos requeridos.
-- [ ] Proxy de producción instalado y escuchando en TCP/80 y TCP/443.
+- [ ] Proxy de producción instalado y escuchando en TCP/80 y TCP/443 (inspección actual: solo SSH escucha en TCP/22; HTTP/HTTPS aún sin listeners, condición esperada antes de instalar el proxy).
 - [ ] TCP/80 y TCP/443 comprobados desde una red externa después de instalar el proxy (la prueba previa a la instalación quedó registrada como línea base no concluyente en `docs/15_VALIDACION_PUBLICA_XITLE.md`).
 - [ ] Routing y ACL del switch L3 validados.
 - [ ] DEV/TEST/INFRA no son accesibles desde Internet.
