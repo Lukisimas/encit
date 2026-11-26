@@ -42,7 +42,7 @@ retirarse si ya no es necesario.
 
 ## DNS público
 
-DGTIC continúa publicando únicamente servicios de producción, con los nombres confirmados:
+DGTIC continúa publicando los nombres públicos de los servicios productivos:
 
 - `encit.unam.mx`
 - `siia.encit.unam.mx`
@@ -50,30 +50,32 @@ DGTIC continúa publicando únicamente servicios de producción, con los nombres
 - `cursos.encit.unam.mx`
 - `ec.encit.unam.mx`
 
-No crear una zona privada completa `encit.unam.mx`; sólo las tres subzonas internas.
+**Estado de Xitle al 26 de noviembre de 2026:** el administrador confirma que el registro público
+A de `xitle.encit.unam.mx` ya fue creado y apunta a `132.247.168.166`, la IP WAN de OPNsense.
+Esta es una confirmación operativa reportada por el administrador; la evidencia de consultas DNS
+desde resolvers externos debe conservarse como parte de la validación de publicación.
 
-## Validación de autoridad DNS (20 de noviembre de 2026)
+La publicación del registro A no acredita por sí sola que el servicio HTTP sea alcanzable. OPNsense
+debe traducir TCP/80 y TCP/443 hacia el servidor de producción `10.129.101.2`, y las reglas de
+firewall deben permitir el tráfico correspondiente.
 
-Se ejecutó desde Windows:
+No crear una zona privada completa `encit.unam.mx`; sólo las tres subzonas internas. Los nombres
+DEV, TEST e infraestructura no deben publicarse en DNS público.
 
-```text
-nslookup -type=ns xitle.encit.unam.mx 8.8.8.8
+## Validación DNS y conectividad de Xitle
+
+Ejecutar desde una estación con acceso a Internet:
+
+```bash
+dig +short A xitle.encit.unam.mx @1.1.1.1
+dig +short A xitle.encit.unam.mx @8.8.8.8
+dig +short AAAA xitle.encit.unam.mx @1.1.1.1
 ```
 
-La respuesta mostró el SOA de `unam.mx`, con servidor primario `ns1.unam.mx`, correo
-responsable `dns.unam.mx` y serial `2026112001`. Esto indica que la consulta se atendió en el
-contexto de la zona padre `unam.mx`; **no demuestra por sí sola que el registro A/AAAA de
-`xitle.encit.unam.mx` exista o apunte a la IP pública de OPNsense**. Como `xitle.encit.unam.mx`
-es un nombre de host y no se ha solicitado una delegación de subzona, la consulta NS no es la
-prueba apropiada para confirmar su publicación.
+El resultado A esperado es `132.247.168.166`. Si existe un registro AAAA, comprobar que la
+conectividad IPv6 esté configurada y llegue al servicio; no mantener un AAAA que apunte a una ruta
+no funcional.
 
-Pendiente comprobar el registro de dirección y conectividad:
-
-```text
-nslookup -type=a xitle.encit.unam.mx 8.8.8.8
-nslookup -type=aaaa xitle.encit.unam.mx 8.8.8.8
-```
-
-Si se usa IPv6, confirmar también que exista ruta y publicación funcional. Antes de emitir el
-certificado Let's Encrypt, confirmar el A (y cualquier AAAA publicado) y la llegada de TCP/80 desde
-Internet al proxy de producción.
+Después, comprobar desde una red externa que TCP/80 sea accesible y llegue al proxy de producción.
+Esta prueba es requisito para la validación HTTP-01 de Let's Encrypt. La consulta NS del nombre de
+host no sustituye la comprobación A/AAAA.
