@@ -101,7 +101,41 @@ El administrador confirmó individualmente que ambas reglas automáticas están 
 
 **Evaluación:** la interfaz activa, la dirección IPv4 y la ruta predeterminada coinciden con el diseño de producción documentado: servidor `10.129.101.2/28`, gateway `10.129.101.1`. Las demás interfaces físicas aparecen abajo; no se consideran un fallo por sí mismas si `ens15f0` es la interfaz destinada al servicio. La presencia de `docker0` en estado DOWN no acredita que Docker esté instalado o funcionando.
 
-**Pendiente:** comprobar conectividad IP con el gateway y salida de red antes de instalar servicios. Esta comprobación debe hacerse separadamente de las pruebas HTTP/HTTPS.
+### Prueba de conectividad con el gateway de producción
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Equipo:** servidor de producción  
+**Comando ejecutado:** `ping -c 4 10.129.101.1`
+
+Resultado reportado por el administrador:
+
+```text
+PING 10.129.101.1 (10.129.101.1) 56(84) bytes of data.
+64 bytes from 10.129.101.1: icmp_seq=1 ttl=64 time=0.199 ms
+64 bytes from 10.129.101.1: icmp_seq=2 ttl=64 time=0.235 ms
+64 bytes from 10.129.101.1: icmp_seq=3 ttl=64 time=0.264 ms
+64 bytes from 10.129.101.1: icmp_seq=4 ttl=64 time=0.235 ms
+
+--- 10.129.101.1 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3067ms
+rtt min/avg/max/mdev = 0.199/0.233/0.264/0.023 ms
+```
+
+| Métrica | Resultado |
+|---|---:|
+| Paquetes transmitidos | 4 |
+| Paquetes recibidos | 4 |
+| Pérdida | 0 % |
+| RTT mínimo | 0.199 ms |
+| RTT promedio | 0.233 ms |
+| RTT máximo | 0.264 ms |
+| TTL observado | 64 |
+
+**Conclusión:** el servidor de producción puede comunicarse por IP con el gateway `10.129.101.1` de la VLAN 51. La conectividad local servidor-gateway queda comprobada. Esta prueba no demuestra todavía que exista salida a Internet ni valida los Port Forward públicos; tampoco sustituye las pruebas TCP externas que se realizarán cuando haya servicios escuchando.
+
+**Siguiente comprobación:** probar conectividad hacia una dirección IP pública desde el servidor. Si ICMP está filtrado en el destino o en el trayecto, el resultado deberá interpretarse junto con una prueba TCP/HTTPS y no como evidencia aislada de falta de salida.
+
+**Pendiente:** comprobar salida de red desde el servidor de producción antes de instalar servicios. Esta comprobación debe hacerse separadamente de las pruebas HTTP/HTTPS.
 
 ## Validaciones pendientes en el orden correcto
 
@@ -126,7 +160,8 @@ El administrador confirmó individualmente que ambas reglas automáticas están 
 - [x] Regla WAN automática de HTTP confirmada (Pass, habilitada, destino `10.129.101.2:80`).
 - [x] Regla WAN automática de HTTPS confirmada (Pass, habilitada, destino `10.129.101.2:443`).
 - [x] Configuración IP de `ens15f0` y ruta predeterminada revisadas; coinciden con `10.129.101.2/28` vía `10.129.101.1`.
-- [ ] Conectividad IP del servidor con el gateway y salida de red comprobadas.
+- [x] Conectividad IP del servidor de producción con el gateway `10.129.101.1` comprobada mediante `ping -c 4` (4/4 respuestas, 0 % de pérdida, RTT promedio 0.233 ms).
+- [ ] Salida de red/Internet desde el servidor de producción comprobada.
 - [ ] Firewall local del servidor revisado.
 - [ ] Servicios de producción instalados y listeners HTTP/HTTPS activos.
 - [ ] TCP/80 comprobado desde una red externa después de instalar el proxy.
