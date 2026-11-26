@@ -266,3 +266,24 @@ La modificación de `/etc/hosts` sólo corrige la resolución local en `pruebas`
 | IP WAN de OPNsense para publicación de producción | `132.247.168.166` (NAT hacia `10.129.101.2`; no corresponde a Gitea) |
 | Registro/override DNS interno para otros equipos | Pendiente; destino previsto `10.129.100.2`; no se modificó OPNsense |
 | Login, push y pull autenticados | Pendientes |
+
+
+### Validación de confianza TLS desde el host de control
+
+**Fecha:** 26 de noviembre de 2026  
+**Host:** `pruebas` (`10.129.100.2/28`)
+
+Se localizó la CA raíz institucional en:
+
+`/usr/local/share/ca-certificates/encit-internal-root-ca.crt`
+
+El certificado tiene como sujeto `C=MX, O=UNAM, OU=ENCiT, CN=ENCiT Internal Root CA`, coincidente con el emisor del certificado wildcard presentado por Gitea. Posteriormente se ejecutó `curl` sin `-k` y sin especificar una CA manualmente, con estos resultados:
+
+| URL | HTTP | TLS verify result | Código de salida |
+|---|---:|---:|---:|
+| `https://git.infra.encit.unam.mx/` | 200 | 0 | 0 |
+| `https://git.infra.encit.unam.mx/v2/` | 401 | 0 | 0 |
+
+Esto confirma que el host `pruebas` confía en la CA institucional y valida correctamente el certificado TLS de Gitea. El HTTP 401 de `/v2/` es esperado sin autenticación y no representa un fallo TLS.
+
+**Alcance:** esta validación corresponde únicamente al host `pruebas`. No demuestra que otros equipos, Jenkins o Docker-in-Docker tengan instalada y utilicen la misma CA. Tampoco valida aún login, push ni pull de imágenes. No se modificó el almacén de certificados durante esta comprobación.
