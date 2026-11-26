@@ -190,3 +190,22 @@ install -d -o "$DEPLOY_USER" -g "$DEPLOY_GROUP" -m 0700 \\
 La corrección quedó registrada en el commit `33c541a67652664dbfffc1b396d342104832d3e4`.
 
 **Estado de producción:** la ejecución anterior se interrumpió al encontrar el error. No asumir que el bootstrap terminó ni que todos los directorios/red quedaron creados. Antes de reintentar, actualizar la copia del repositorio en producción a este commit y revisar el estado parcial de las rutas. El administrador ejecutará manualmente el script actualizado. No se ejecutó ningún comando remoto ni se modificó el servidor desde esta actualización documental.
+
+
+### Inspección del estado parcial tras la primera ejecución
+
+**Fecha:** 26 de noviembre de 2026.
+
+Después de actualizar el script corregido en producción, el administrador inspeccionó las rutas sin modificarlas. Se observó:
+
+- En SSD, existen los directorios base `/srv/encit/{platform/production,apps,data,config}`, los subdirectorios `apps/{web,siia,revista,cursos,moodle}/prod`, los directorios `data/{web,siia,revista,cursos,moodle}/prod` y `platform/production/letsencrypt`.
+- El directorio de Certbot aparece como `root:root`, modo `0700`, conforme al diseño.
+- En RAID, existen `/data/encit/{data,backups,archives}` y `/data/encit/data/web/prod`.
+- No se observaron aún directorios `/data/encit/backups/<app>/prod` ni los directorios de datos RAID de las otras aplicaciones.
+- La red Docker `encit_prod_edge` continúa sin existir.
+
+**Interpretación:** el primer intento se interrumpió durante la primera iteración del bucle de respaldos (aplicación `web`), al ejecutar `install` sin `-d`. Los directorios listados antes de ese punto quedaron creados; las operaciones posteriores del script no se completaron. La inspección no detectó ni modificó servicios o contenedores.
+
+Los directorios ya existentes no deben eliminarse. El bootstrap corregido utiliza `install -d` para crear directorios y establecer sus modos/propietarios; puede volver a recorrer las rutas previstas. La red externa se creará al final si aún no existe.
+
+**Pendiente:** repetir manualmente el bootstrap ya actualizado y revisar su salida completa. Después, verificar estructura, propietarios/permisos y red. No se ha desplegado OJS ni el proxy y no se ha ejecutado Certbot.
