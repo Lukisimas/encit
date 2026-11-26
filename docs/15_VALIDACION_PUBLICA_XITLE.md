@@ -269,8 +269,11 @@ tcp     LISTEN    0         128                0.0.0.0:22              0.0.0.0:*
 tcp     LISTEN    0         128                   [::]:22                 [::]:*       users:(("sshd",
 ```
 
-**Hallazgo confirmado en el fragmento:** SSH (`sshd`) escucha en TCP/22 en IPv4 (`0.0.0.0:22`) y en IPv6 (`[::]:22`). El fragmento está truncado al final de la segunda línea; por ello, no se considera todavía una captura completa del conjunto de sockets.
+**Aclaración del administrador:** la salida está completa y contiene únicamente las dos entradas mostradas. SSH (`sshd`) escucha en TCP/22 en IPv4 (`0.0.0.0:22`) y en IPv6 (`[::]:22`).
 
-**HTTP/HTTPS:** en el fragmento recibido no aparecen listeners TCP/80 ni TCP/443. Esto es consistente con que el proxy web aún no se ha instalado, pero la ausencia definitiva de otros listeners deberá confirmarse con la salida completa.
+**HTTP/HTTPS:** no hay listeners TCP/80 ni TCP/443. Tampoco se reportan otros sockets en escucha. Esto es consistente con que todavía no se ha instalado el proxy web ni otros servicios de aplicación en producción.
 
 No se modificó ningún servicio ni configuración.
+
+
+**Cierre de la inspección de listeners:** queda confirmado que el único servicio TCP en escucha es SSH en el puerto 22, tanto en IPv4 como en IPv6. Los puertos HTTP/80 y HTTPS/443 no tienen listeners en este momento. Esta condición es esperada antes de instalar el proxy y no constituye por sí misma un fallo de NAT.
