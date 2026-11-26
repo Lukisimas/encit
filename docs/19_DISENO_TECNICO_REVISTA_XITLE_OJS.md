@@ -606,3 +606,39 @@ La inspección física realizada el 26-nov-2026 confirma el estado real siguient
 - No se han creado ni iniciado contenedores OJS/MariaDB, no se han cambiado propietarios/permisos y no se han modificado DNS, OPNsense, NAT o proxy.
 - Antes de crear volúmenes se deben validar UID/GID efectivos de las imágenes fijadas y el mapeo exacto de directorios que exige el paquete OJS. El directorio `files` debe permanecer fuera del document root.
 - El almacenamiento local de PROD no sustituye una copia de seguridad independiente del host; falta decidir destino y probar restauración DB + archivos.
+
+
+## Anexo de verificación física de almacenamiento y redes (26-nov-2026)
+
+Esta sección actualiza las previsiones de almacenamiento que aparecen en las secciones anteriores. Prevalece sobre cualquier frase anterior que indicara que las rutas de PROD no existían o no habían sido creadas.
+
+### TEST — host `pruebas`
+
+- Disco único observado: `/dev/sda`, 931.5 GiB; partición ext4 `/dev/sda1` montada en `/`; 847 GiB disponibles en la inspección.
+- No se observó segundo disco ni montaje `/data`.
+- Docker Root Dir: `/var/lib/docker`, dentro del filesystem raíz.
+- `/srv/encit/data` existe, propietario `root:root`, modo 755, con 340 MB ocupados.
+- Contenido identificado: `gitea/data`, `gitea/postgres` y `jenkins/home`; no se identificó directorio de Revista Xitle.
+- Se propone para TEST, todavía sin crear: `/srv/encit/data/revista/test/{mariadb,files,public,config,cache}`. Todo residirá en el filesystem raíz.
+- Redes observadas: `encit_control_edge` 172.18.0.0/16; `encit-control-platform_jenkins_internal` 172.19.0.0/16; `encit-control-platform_gitea_internal` 172.20.0.0/16; `encit-control-platform_jenkins_egress` 172.21.0.0/16. No reutilizar las redes internas de Gitea/Jenkins.
+- Contenedores activos observados: Docker-in-Docker, Jenkins, Gitea, PostgreSQL de Gitea, proxy Nginx y Mailpit.
+
+### PROD — host `produccion`
+
+- SSD `/dev/sda2`, ext4, montado en `/`; 392 GB disponibles en la inspección. Docker Root Dir: `/var/lib/docker`.
+- HDD `/dev/sdb1`, ext4, montado en `/data`; 62 TB disponibles. UUID observado: `5d642b08-fac8-48fa-8f9b-5976c66af37c`.
+- La red `encit_prod_edge` existe con driver bridge, subred `172.18.0.0/16`, gateway `172.18.0.1`.
+- No se observaron contenedores, incluidos detenidos, en el inventario ejecutado.
+- Las cinco rutas de persistencia de Xitle existen y estaban vacías en la inspección:
+  - SSD: `/srv/encit/data/revista/prod/mariadb` (`root:root`, 750), `config` y `cache` (`www-data:www-data`, 750).
+  - HDD: `/data/encit/data/revista/prod/files` y `public` (`www-data:www-data`, 750).
+- Los directorios padre `/srv/encit/data/revista`, `/srv/encit/data/revista/prod`, `/data/encit/data/revista` y `/data/encit/data/revista/prod` son `root:www-data`, modo 750.
+- No cambiar propietarios ni permisos hasta verificar los UID/GID de las imágenes fijadas.
+
+### Decisión de persistencia
+
+PROD conserva MariaDB/configuración/caché en SSD y `files_dir`/archivos públicos en HDD. TEST usa el único filesystem disponible para sus datos de prueba, en rutas separadas por aplicación y entorno. El HDD de PROD no es por sí solo un respaldo independiente.
+
+### Pendiente antes de fijar permisos
+
+La identidad `www-data` del host no demuestra por sí sola que la imagen final use el mismo UID/GID. La identidad del proceso MariaDB tampoco debe suponerse. Se inspeccionarán las imágenes exactas y sus digests en TEST; después se validará el mapeo con los directorios host, sin cambiar aún permisos en PROD.
