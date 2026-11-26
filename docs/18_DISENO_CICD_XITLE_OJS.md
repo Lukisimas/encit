@@ -255,3 +255,19 @@ El pipeline se considerará listo para producción cuando pueda demostrarse, con
 - La release registra commit, digest, entornos, aprobación y resultado.
 
 **Conclusión:** la plataforma actual ya probó conectividad autenticada Jenkins → Gitea y push/pull del Container Registry con una imagen temporal. El siguiente trabajo no es desplegar OJS todavía: primero hay que inspeccionar el contenido real de `repos/revista` y cerrar las decisiones de build, persistencia, migraciones y acceso remoto. Este documento define el contrato objetivo sin atribuir al repositorio o a los servidores archivos y capacidades que aún no se han verificado.
+
+## 13. Repositorio Git de aplicación seleccionado (26-nov-2026)
+
+El repositorio institucional destinado al proyecto queda identificado como:
+
+- URL Gitea: [https://git.infra.encit.unam.mx/encit/revista](https://git.infra.encit.unam.mx/encit/revista)
+- Organización: `encit`.
+- Nombre: `revista`.
+- Visibilidad: privada.
+- Rama predeterminada confirmada visualmente: `main`.
+
+El repositorio existe y el administrador puede abrirlo desde la interfaz autenticada. La API sin autenticación devolvió HTTP 404, resultado compatible con el ocultamiento de repositorios privados y que no debe interpretarse como inexistencia.
+
+**Estado de inicialización:** no se observa todavía `README.md`; se acordó incorporar `README.md` y `.gitignore` desde el primer commit de contenido. Hasta que se agreguen, no hay evidencia de Dockerfile, Compose, código OJS, plugins ni Jenkinsfile en este repositorio.
+
+Por tanto, el paso de inspección de estructura real se encuentra bloqueado hasta inicializar el repositorio. El siguiente paso es añadir esos dos archivos en `main`, verificar el commit y después inspeccionar el árbol. La estructura objetivo descrita en la sección 4 sigue siendo una propuesta, no un inventario.
