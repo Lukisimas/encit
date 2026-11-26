@@ -572,3 +572,14 @@ La revisión del inventario histórico de PROD y del inventario de redes de TEST
 - No existe todavía inventario de discos, RAID, filesystem, montajes o capacidad del host TEST. No fijar rutas persistentes de OJS TEST hasta obtenerlo.
 
 Estos puntos son decisiones de diseño; no se crearon directorios, volúmenes ni servicios.
+
+
+### Validación de almacenamiento y redes de Revista Xitle en TEST/PROD (26-nov-2026)
+
+**TEST — host `pruebas`:** inventario confirmado de un único disco `/dev/sda` de 931.5 GiB, ext4 en `/`, 847 GiB disponibles; sin segundo disco ni montaje `/data`. Docker Root Dir `/var/lib/docker`. El árbol `/srv/encit/data` contiene únicamente `gitea/data`, `gitea/postgres` y `jenkins/home` (aprox. 340 MiB); no existe `/srv/encit/data/revista`. Rutas propuestas no creadas: `/srv/encit/data/revista/test/{mariadb,files,public,config,cache}`.
+
+Redes Docker observadas: `encit_control_edge` 172.18.0.0/16; `encit-control-platform_jenkins_internal` 172.19.0.0/16; `encit-control-platform_gitea_internal` 172.20.0.0/16; `encit-control-platform_jenkins_egress` 172.21.0.0/16. OJS web se conectará a edge y a una red privada propia; MariaDB sólo a la privada. No conectar OJS a redes internas de Gitea/Jenkins.
+
+**PROD — host `produccion`:** SSD `/dev/sda2` ext4 en `/` (392 GiB disponibles); HDD `/dev/sdb1` ext4 en `/data` (aprox. 62 TiB disponibles); Docker Root Dir `/var/lib/docker`. Se confirmó la existencia de los directorios vacíos: SSD `/srv/encit/data/revista/prod/mariadb` (root:root 750), `config` y `cache` (www-data:www-data 750); HDD `/data/encit/data/revista/prod/files` y `public` (www-data:www-data 750). No se encontraron contenedores, incluidos detenidos. Red `encit_prod_edge` 172.18.0.0/16.
+
+**Conclusión:** persistencia TEST concentrada en SSD; persistencia PROD distribuida entre SSD (DB/config/cache) y HDD (files/public). La subred edge 172.18.0.0/16 se repite en hosts distintos, sin colisión local. No se crearon rutas, contenedores ni volúmenes, y no se modificaron permisos, DNS, OPNsense, NAT o proxy. Falta validar UID/GID de las imágenes exactas, confirmar rutas internas OJS y definir backup independiente con restauración ensayada.
