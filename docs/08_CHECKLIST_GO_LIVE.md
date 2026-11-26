@@ -37,15 +37,15 @@
 - [x] Credencial Jenkins `gitea-jenkins-token` registrada en el almacén System / Global; descripción: `Token API Gitea - cuenta técnica Jenkins ENCiT`.
 - [x] Credencial Jenkins `gitea-jenkins-api` registrada en el ámbito System scope / System / Global; descripción: `Token API Gitea - integración Jenkins`.
 - [ ] Verificar vigencia y scopes de ambas credenciales sin revelar sus valores; confirmar cuál se utilizará para API de Gitea y cuál para Container Registry.
-- [ ] Confirmar permisos de `jenkins` sobre el namespace/paquete de prueba.
+- [x] Confirmar permisos efectivos de la cuenta técnica `jenkins` sobre el namespace de prueba mediante push/pull.
 - [x] Cliente Docker disponible en `pruebas`: CLI y Engine `29.7.2`; `sudo docker version` e `info` respondieron correctamente. Usuario `administrador` (UID 1000), sin pertenencia al grupo `docker`; se utilizará `sudo`.
-- [ ] Ejecutar `docker login` de forma interactiva y validar publicación/descarga de una imagen de prueba en Gitea Container Registry.
+- [x] Validar desde Jenkins `docker login`, `docker push` y `docker pull` de una imagen temporal en Gitea Container Registry.
 - [ ] Conciliar plugins instalados con `control/jenkins/plugins.txt`.
 - [ ] Adaptar las ACL de `git`, `jenkins` y `mail` a las redes autorizadas reales; actualmente conservan el ejemplo `10.10.10.0/24`.
 - [x] Validar HTTPS local de Gitea: `HTTP/2 200`; certificado wildcard vigente, SAN compatible con `git.infra.encit.unam.mx`, emitido por `ENCiT Internal Root CA`.
 - [x] Validar endpoint Registry `/v2/` por hostname: `HTTP/2 401` con desafío Bearer y cabecera `docker-distribution-api-version: registry/2.0` (respuesta esperada sin autenticación).
 - [x] CA raíz ENCiT localizada en `/usr/local/share/ca-certificates/encit-internal-root-ca.crt` en el host `pruebas`; `curl` sin `-k` validó HTTPS de Gitea (HTTP 200) y Registry `/v2/` (HTTP 401 esperado), con `TLS verify result: 0` en ambos casos. Validación documentada en `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`. Alcance limitado al host `pruebas`; falta validar otros clientes, Jenkins y Docker-in-Docker.
-- [ ] Validar autenticación y publicación/descarga de imagen de prueba en Gitea Container Registry.
+- [x] Validar autenticación y publicación/descarga de imagen de prueba en Gitea Container Registry; digest registrado en `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`.
 
 ## Aplicación Xitle (OJS)
 
@@ -83,6 +83,25 @@
 - [x] Aplicar el cambio al contenedor Jenkins de forma controlada; se recreó únicamente Jenkins y se conservó el volumen persistente.
 - [x] Verificar resolución desde el contenedor Jenkins después de recrearlo: `git.infra.encit.unam.mx` resuelve a `10.129.100.2`.
 - [x] Validar TLS desde el contenedor Jenkins sin `curl -k`: HTTPS `HTTP=200`, `TLS_VERIFY=0`, después de recrear el servicio con la CA incorporada a la imagen.
-- [ ] Validar autenticación API de Gitea desde un Pipeline sin exponer tokens en consola/logs.
+- [x] Validar autenticación API de Gitea desde un Pipeline sin exponer tokens en consola/logs.
 
 **Estado actualizado (26-nov-2026):** `extra_hosts` ya está aplicado y verificado en el contenedor Jenkins; el hostname resuelve a `10.129.100.2`. La CA raíz ENCiT se incorporó al Dockerfile local, la imagen se reconstruyó y Jenkins se recreó conservando su volumen. HTTPS desde el contenedor responde `HTTP=200` con `TLS_VERIFY=0`, sin `-k`. La prueba inicial de API no llegó a TLS ni autenticación por el fallo DNS que ya fue corregido. Siguen pendientes la prueba API autenticada, login y push/pull del Registry y validación independiente de Docker-in-Docker. No se modificaron DNS institucionales ni OPNsense.
+
+
+### Jenkins / Docker-in-Docker: DNS y Container Registry (26-nov-2026)
+
+- [x] Confirmar que Jenkins usa el daemon Docker-in-Docker remoto `tcp://docker-dind:2376`.
+- [x] Configurar DNS `10.129.100.1` exclusivamente en el servicio `docker-dind` del Compose operativo.
+- [x] Recrear únicamente Docker-in-Docker y verificar que resuelve `git.infra.encit.unam.mx` a `10.129.100.2`.
+- [x] Validar API de salud desde Jenkins: `HTTP=200`, `TLS_VERIFY=0`.
+- [x] Validar API autenticada de Gitea: `HTTP=200`, login `jenkins`.
+- [x] Identificar que el token previo carecía de scopes de Packages; emitir token técnico con `read:package` y `write:package` y actualizar `gitea-jenkins-token` sin revelar el secreto.
+- [x] Validar `docker login` desde Jenkins: `Login Succeeded`.
+- [x] Construir y publicar `git.infra.encit.unam.mx/jenkins/registry-smoke-test:smoke-1`.
+- [x] Eliminar la copia local y descargar de nuevo la imagen con `docker pull`.
+- [x] Verificar digest `sha256:7355685748d5f6c0af030b9cc154385b223b3050e481f4a0a1b46ae145af13a8`.
+- [ ] Decidir y, con autorización, eliminar el paquete remoto temporal `jenkins/registry-smoke-test:smoke-1`.
+- [ ] Incorporar la configuración DNS y el flujo de publicación en la configuración versionada/automatizada apropiada, después de revisar el Compose operativo frente al repositorio.
+- [ ] Diseñar y probar el Jenkinsfile real de OJS/Xitle y el flujo de promoción de la misma imagen de TEST a PROD.
+
+**Estado actualizado:** la integración de red, TLS, API y Container Registry entre Jenkins y Gitea está validada con una imagen temporal. No se han probado todavía los pipelines de construcción ni despliegue de OJS.
