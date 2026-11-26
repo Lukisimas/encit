@@ -573,3 +573,36 @@ Consultar estas fuentes al construir y actualizar. Las versiones y requisitos pu
 - Se establece que el repositorio Gitea contiene únicamente su inicialización y que la implementación OJS no existe todavía.
 - Se define que clonar el repositorio será una actividad de implementación posterior, no un requisito para diseñar la arquitectura.
 - No se realizaron cambios en hosts, contenedores, DNS, OPNsense ni servicios.
+
+
+## Anexo — Validación de almacenamiento y redes en ambos entornos (26-nov-2026)
+
+La inspección física realizada el 26-nov-2026 confirma el estado real siguiente. Este anexo prevalece sobre las frases anteriores que indicaban que los directorios de PROD aún no estaban creados o que faltaba inventariar el almacenamiento TEST.
+
+### TEST — host `pruebas` (10.129.100.2)
+
+- Disco único `/dev/sda`, 931.5 GiB; partición ext4 `/dev/sda1` montada en `/`, 901 GiB de tamaño y 847 GiB disponibles en la inspección.
+- No se observó segundo disco ni montaje `/data`; `/srv` y `/var/lib/docker` resuelven al filesystem raíz. Docker Root Dir: `/var/lib/docker`.
+- No existe todavía `/srv/encit/data/revista`. La estructura persistente existente contiene Gitea (`data`, `postgres`) y Jenkins (`home`), con 340 MiB aproximados en total.
+- Se propone para OJS TEST `/srv/encit/data/revista/test/{mariadb,files,public,config,cache}`, todo sobre el SSD. Son rutas de diseño; no se han creado.
+- Redes Docker confirmadas: `encit_control_edge` 172.18.0.0/16 (gateway 172.18.0.1); `encit-control-platform_jenkins_internal` 172.19.0.0/16; `encit-control-platform_gitea_internal` 172.20.0.0/16; `encit-control-platform_jenkins_egress` 172.21.0.0/16. Las tres redes de plataforma no deben reutilizarse para OJS.
+- OJS web podrá conectarse a la red edge y a una red privada propia; MariaDB sólo a la red privada. La subred privada se dejará a la asignación dinámica de Docker.
+
+### PROD — host `produccion` (10.129.101.2)
+
+- SSD `/dev/sda2`, ext4 en `/`, 415 GiB de tamaño y 392 GiB disponibles en la inspección. Docker Root Dir: `/var/lib/docker`.
+- HDD `/dev/sdb1`, ext4 montado en `/data`, 65.5 TiB nominales y aproximadamente 62 TiB disponibles.
+- La estructura de Revista Xitle ya existe y está vacía en el momento de la inspección:
+  - SSD: `/srv/encit/data/revista/prod/mariadb` (root:root, 750), `config` y `cache` (www-data:www-data, 750).
+  - HDD: `/data/encit/data/revista/prod/files` y `public` (www-data:www-data, 750).
+- Las rutas de las aplicaciones Cursos, Moodle, SIIA y Web también existen; no deben modificarse.
+- Red `encit_prod_edge`: 172.18.0.0/16, gateway 172.18.0.1. No había contenedores, incluidos detenidos, en el inventario Docker de esta inspección.
+- La subred 172.18.0.0/16 también se utiliza en TEST, pero los hosts son distintos; no hay colisión local entre los daemons Docker. Evaluar rutas/VPN sólo si se requiere comunicación entre hosts mediante esas redes.
+
+### Decisiones consolidadas y límites
+
+- TEST usa un único filesystem para DB y archivos; PROD separa DB/config/cache en SSD y archivos privados/públicos en HDD.
+- Los directorios PROD observados están vacíos. Su existencia no significa que MariaDB u OJS estén instalados.
+- No se han creado ni iniciado contenedores OJS/MariaDB, no se han cambiado propietarios/permisos y no se han modificado DNS, OPNsense, NAT o proxy.
+- Antes de crear volúmenes se deben validar UID/GID efectivos de las imágenes fijadas y el mapeo exacto de directorios que exige el paquete OJS. El directorio `files` debe permanecer fuera del document root.
+- El almacenamiento local de PROD no sustituye una copia de seguridad independiente del host; falta decidir destino y probar restauración DB + archivos.
