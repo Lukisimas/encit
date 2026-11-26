@@ -23,7 +23,13 @@
 
 ## Aplicación Xitle (OJS)
 
-- [ ] Directorios persistentes creados y permisos/UID/GID comprobados.
+- [x] Docker Engine `29.7.2`, Docker Compose `v5.5.0` y daemon activo comprobados en producción.
+- [x] Usuario `deploy` (`1001:1001`) y pertenencia al grupo `docker` (`989`) comprobados.
+- [x] Identidad `www-data` (`33:33`) comprobada para OJS.
+- [x] Volumen `/data` comprobado: `/dev/sdb1`, ext4, UUID `5d642b08-fac8-48fa-8f9b-5976c66af37c`, montado correctamente.
+- [x] Estado inicial previo al bootstrap comprobado: red `encit_prod_edge` y directorios base aún no existen; el script los crea.
+- [ ] Ejecutar manualmente `repos/infrastructure/bootstrap/prepare-production-host.sh` como root (el administrador realizará la ejecución).
+- [ ] Verificar directorios, propietarios/permisos y red `encit_prod_edge` tras el bootstrap.
 - [ ] Variables de producción preparadas fuera de Git.
 - [ ] Imagen OJS identificada por tag probado en TEST.
 - [ ] MariaDB inicia y supera healthcheck.
