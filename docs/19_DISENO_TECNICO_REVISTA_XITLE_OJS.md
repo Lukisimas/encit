@@ -51,7 +51,7 @@ Los datos de red describen la infraestructura documentada. Cualquier cambio de r
 | ADR-XTL-01 | Adoptar la línea OJS 3.5.x, fijando el último parche estable disponible al construir | Línea LTS con mantenimiento activo; nunca usar \`latest\` |
 | ADR-XTL-02 | Construir una imagen propia desde el paquete oficial de distribución PKP | Controlar PHP, extensiones, Apache, permisos y procedencia |
 | ADR-XTL-03 | Apache + PHP en el contenedor web de OJS | OJS soporta Apache; reduce la complejidad frente a PHP-FPM más otro servidor web interno |
-| ADR-XTL-04 | MariaDB dedicada por entorno | Aislamiento de datos y ciclo de vida independiente |
+| ADR-XTL-04 | Base de datos lógica y credenciales dedicadas por entorno; evaluar primero el MySQL institucional existente en PROD | Reutilizar el servicio MySQL si su versión exacta cumple los requisitos PKP y puede aislarse; si no, desplegar MariaDB compatible |
 | ADR-XTL-05 | Archivos privados de OJS fuera del document root | Los manuscritos y documentos de revisión no deben ser descargables directamente |
 | ADR-XTL-06 | Nginx existente como proxy perimetral/reverse proxy | Reutilizar el punto de entrada institucional; TLS termina en PROD |
 | ADR-XTL-07 | TEST y PROD con Compose, redes, datos y secretos independientes | Evitar contaminación cruzada y permitir pruebas seguras |
@@ -94,17 +94,24 @@ No fijar aún valores de memoria o límites de carga: deben derivarse del tamañ
 
 ### 3.3 Base de datos
 
-Se propone MariaDB, por familiaridad operativa y compatibilidad documentada por PKP. El README oficial de OJS indica MariaDB 10.3+; la guía de inicio de PKP también enumera MySQL y PostgreSQL. Para evitar interpretar una versión mínima como recomendación de producción:
+OJS 3.5 admite MySQL 5.7.22+ y MariaDB 10.3+ según el README oficial del proyecto; también contempla PostgreSQL 9.5+. En la arquitectura ENCiT ya se contempla un servicio MySQL en producción, por lo que **no se debe desplegar automáticamente otro motor ni crear una segunda instancia antes de revisar el servicio existente**.
 
-- Evaluar MariaDB 10.11 LTS como versión conservadora inicial.
-- Verificar la matriz de compatibilidad y ejecutar pruebas con la versión exacta de OJS antes de fijar la imagen.
-- Fijar versión y digest de la imagen MariaDB.
-- Usar InnoDB, juego de caracteres y collation compatibles con la versión de OJS.
-- No exponer el puerto de MariaDB al host ni a redes externas.
+Decisión de diseño:
+
+1. Inspeccionar la versión exacta, configuración, capacidad, backups y política de mantenimiento del MySQL institucional previsto para PROD.
+2. Si cumple los requisitos de la versión fijada de OJS, se puede utilizar ese servicio creando una base de datos y usuario exclusivos para Xitle, con privilegios limitados. No compartir esquema, usuario ni credenciales con otras aplicaciones.
+3. Si el MySQL existente no cumple compatibilidad, aislamiento, capacidad o política operativa, desplegar MariaDB dedicado para OJS.
+4. TEST tendrá su propia base y credenciales; nunca conectará a la base productiva.
+
+MariaDB 10.11 LTS queda como alternativa candidata, no como versión ya seleccionada. La versión exacta del motor se fijará después de verificar la compatibilidad del paquete OJS elegido y ensayar backup/restauración.
+
+En cualquiera de las alternativas:
+
+- Usar InnoDB y juego de caracteres/collation compatibles con la versión OJS.
+- No exponer el puerto de base de datos al host ni a redes externas.
 - Crear una base y un usuario exclusivos para OJS, con privilegios sólo sobre esa base.
-- Mantener una instancia y volumen distintos para TEST y PROD.
-
-No reutilizar una base de datos institucional existente ni compartir la base entre entornos.
+- Separar completamente TEST y PROD.
+- Documentar la versión del motor y el procedimiento de actualización antes del go-live.
 
 ## 4. Arquitectura lógica
 
@@ -336,7 +343,21 @@ TEST debe usar Mailpit o un relay de pruebas. PROD debe usar un relay SMTP insti
 
 ### 11.2 Tareas programadas
 
-Identificar las tareas que requiere OJS 3.5 y configurar el mecanismo recomendado por PKP para esa versión. Validar frecuencia, logs, concurrencia y comportamiento ante fallos. No ejecutar el scheduler en varios contenedores simultáneamente sin que la documentación de PKP lo permita.
+OJS 3.5 sustituyó el mecanismo anterior por Laravel Task Scheduler. El script de línea de comandos documentado para esta versión es:
+
+```
+php lib/pkp/tools/scheduler.php run
+```
+
+Para producción se propone ejecutarlo mediante el planificador del sistema operativo cada minuto, como el mismo usuario que ejecuta PHP/OJS, desde un servicio scheduler separado o una tarea controlada del host. La plantilla oficial advierte que el scheduler web integrado no es recomendable para sitios de alto volumen y muestra el cron cada minuto. Por tanto:
+
+- Configurar el mecanismo de línea de comandos, no el antiguo `tools/runScheduledTasks.php`.
+- Usar exactamente la misma imagen, configuración y versión de OJS que el contenedor web.
+- Evitar ejecutar dos schedulers concurrentes sin validar los mecanismos de bloqueo de OJS.
+- Registrar salida y errores, y alertar si deja de ejecutarse.
+- Validar tareas y colas de trabajo con la versión exacta de OJS antes de PROD.
+
+La frecuencia propuesta es un minuto, siguiendo la plantilla y documentación de PKP; ajustar sólo si las pruebas y necesidades editoriales lo justifican.
 
 ### 11.3 Plugins e integraciones editoriales
 
@@ -497,6 +518,8 @@ Cada fase debe documentarse con evidencia y no se marcará como implementada por
 
 - PKP, **Getting Started with OJS 3.5**: https://github.com/pkp/pkp-docs/blob/main/admin-guide/en/getting-started.md
 - PKP, **OJS README / requisitos de plataforma**: https://github.com/pkp/ojs/blob/main/README.md
+- PKP, **OJS 3.5 Release Notebook (cambios del Task Scheduler)**: https://github.com/pkp/pkp-docs/blob/main/dev/release-notebooks/en/3.5-release-notebook.md
+- PKP, **Plantilla de configuración OJS 3.5 (scheduler y job runner)**: https://github.com/pkp/ojs/blob/main/config.TEMPLATE.inc.php
 - PKP, **Security Policy / versiones soportadas**: https://github.com/pkp/ojs/security/policy
 - PKP, **Documentación y guías oficiales**: https://docs.pkp.sfu.ca/
 - PKP, **Descargas oficiales de OJS**: https://pkp.sfu.ca/software/ojs/
