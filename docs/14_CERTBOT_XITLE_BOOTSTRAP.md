@@ -155,3 +155,16 @@ El administrador ejecutó las comprobaciones de versiones/estado de Docker, cuen
 - Usuario/grupo `www-data`: UID/GID `33:33`, coincide con la identidad esperada por la imagen OJS.
 
 **Conclusión:** se satisfacen las precondiciones de Docker y de identidad de `deploy`/`www-data` verificadas en esta etapa. Esta validación no ejecuta el bootstrap ni comprueba todavía las demás precondiciones que el script consulta (montaje y UUID de `/data`, existencia de rutas, red Docker, entre otras). No se realizaron cambios en el servidor.
+
+
+### Validación de montaje y estado inicial de rutas/red
+
+**Fecha:** 26 de noviembre de 2026.
+
+El administrador confirmó en el host de producción:
+
+- `/data` es punto de montaje activo, origen `/dev/sdb1`, filesystem `ext4`, UUID `5d642b08-fac8-48fa-8f9b-5976c66af37c`, coincidente con `EXPECTED_DATA_UUID` del bootstrap.
+- La red Docker externa `encit_prod_edge` todavía no existe. El script `prepare-production-host.sh` contempla crearla si falta.
+- Los directorios `/srv/encit`, `/srv/encit/platform` y `/data/encit` todavía no existen, consistente con el estado previo al bootstrap; el script contempla crearlos.
+
+**Conclusión:** montaje y estado inicial de rutas/red son compatibles con la ejecución prevista del bootstrap. La red y los directorios no se crearon manualmente. No se ha ejecutado todavía el script ni se han iniciado servicios.
