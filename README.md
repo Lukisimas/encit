@@ -55,6 +55,10 @@ repositorio, los stacks, los servicios y las rutas persistentes.
 - OPNsense reenvía TCP/80 y TCP/443 hacia el servidor de producción (`10.129.101.2`).
 - El certificado de Xitle se administra con Certbot/Let's Encrypt en el servidor de producción.
 
+## Validación de publicación de Xitle
+
+El estado reportado del registro DNS y las pruebas de resolución pública, conectividad HTTP/HTTPS y prerrequisitos de Certbot se documentan en [`docs/15_VALIDACION_PUBLICA_XITLE.md`](docs/15_VALIDACION_PUBLICA_XITLE.md). No solicitar el certificado hasta completar desde una red externa la resolución DNS y la prueba de acceso HTTP por TCP/80.
+
 ## Estructura
 
 - `repos/infrastructure`: plataforma común, reverse proxies, Jenkins/Gitea y plantillas de red.
