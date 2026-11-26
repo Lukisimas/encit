@@ -9,6 +9,22 @@
 
 Comprobar, antes de solicitar el certificado de Let's Encrypt, que el nombre público resuelve a la IP WAN de OPNsense y que los puertos TCP/80 y TCP/443 son alcanzables desde Internet.
 
+## Resultados de DNS desde la estación externa del administrador
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Herramienta:** PowerShell `Resolve-DnsName`  
+**Resolvers consultados:** Cloudflare (`1.1.1.1`) y Google (`8.8.8.8`).
+
+| Consulta | Resultado | Estado |
+|---|---|---|
+| A mediante `1.1.1.1` | `132.247.168.166`, TTL 7200 | Confirmado |
+| A mediante `8.8.8.8` | `132.247.168.166`, TTL 7200 | Confirmado |
+| AAAA mediante `1.1.1.1` | No se devolvió registro AAAA; la respuesta mostró el SOA de `unam.mx` en Authority | Sin registro AAAA publicado |
+
+Las dos consultas A independientes coinciden con la IP WAN esperada de OPNsense. La respuesta de AAAA con el SOA en la sección Authority y sin respuesta AAAA indica que no hay un registro AAAA publicado para este nombre en el momento de la consulta.
+
+**Conclusión DNS:** la publicación IPv4 de `xitle.encit.unam.mx` queda validada desde dos resolvers públicos. No se observa un registro IPv6 que requiera validación adicional.
+
 ## Intento de comprobación desde el entorno de trabajo
 
 Se intentaron las siguientes pruebas desde el entorno de ejecución disponible para esta revisión:
@@ -50,8 +66,8 @@ Si las pruebas DNS son correctas pero HTTP no conecta, revisar en OPNsense el po
 ## Estado
 
 - [x] DNS A reportado como creado por el administrador y apuntando a `132.247.168.166`.
-- [ ] DNS A confirmado mediante resolvers públicos independientes.
-- [ ] Registro AAAA comprobado.
+- [x] DNS A confirmado mediante resolvers públicos independientes (Cloudflare y Google devuelven `132.247.168.166`).
+- [x] Registro AAAA consultado; no se observa registro AAAA publicado.
 - [ ] TCP/80 comprobado desde una red externa.
 - [ ] TCP/443 comprobado desde una red externa.
 - [ ] Certificado Let's Encrypt emitido e instalado.
