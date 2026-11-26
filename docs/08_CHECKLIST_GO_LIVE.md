@@ -8,7 +8,7 @@
 - [x] Consulta AAAA realizada; no se observa registro AAAA publicado.
 - [x] Port Forward TCP/80 y TCP/443 de OPNsense revisados: WAN address hacia `10.129.101.2`, conservando los puertos.
 - [x] Regla WAN automática de HTTP confirmada como Pass y habilitada, con destino `10.129.101.2:80`.
-- [ ] Regla WAN automática de HTTPS inspeccionada individualmente en todos sus campos.
+- [x] Regla WAN automática de HTTPS confirmada como Pass y habilitada, con destino `10.129.101.2:443`.
 - [ ] Firewall local del servidor permite los puertos requeridos.
 - [ ] Firewall local del servidor permite los puertos requeridos.
 - [ ] Proxy de producción instalado y escuchando en TCP/80 y TCP/443.
