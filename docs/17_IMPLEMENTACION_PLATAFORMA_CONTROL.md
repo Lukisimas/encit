@@ -314,6 +314,13 @@ Esta comprobación valida la disponibilidad del cliente y del daemon en el host 
 
 El administrador confirmó que ya existe en Gitea el usuario local `jenkins`. La cuenta se utilizará como identidad técnica para la integración Jenkins–Gitea y las pruebas del Container Registry; no se utilizará la cuenta administrativa personal para automatizar publicaciones.
 
-**Pendiente antes de autenticar:** generar desde la sesión de Gitea del usuario `jenkins` un token de acceso dedicado a la automatización, con los permisos mínimos para leer y publicar paquetes (lectura/escritura de Packages, según los scopes que presente la instancia). El token debe guardarse como credencial segura en Jenkins o utilizarse interactivamente para la prueba inicial. No copiarlo a archivos del repositorio, variables visibles en logs ni documentación.
+Además, el administrador confirmó que ya están registradas en Jenkins las siguientes credenciales de integración:
 
-La existencia de la cuenta no demuestra todavía que tenga permisos sobre el paquete/namespace que se usará. Antes del push de prueba se debe confirmar su acceso al propietario/organización y repositorio de paquetes correspondiente.
+| ID de credencial | Ámbito / almacén reportado | Descripción |
+|---|---|---|
+| `gitea-jenkins-token` | System / Global | Token API Gitea - cuenta técnica Jenkins ENCiT |
+| `gitea-jenkins-api` | System scope / System / Global | Token API Gitea - integración Jenkins |
+
+Se documentan únicamente los identificadores, el ámbito y las descripciones visibles. Los valores secretos de ambas credenciales no se consultaron ni se incorporan al repositorio. La existencia de estas entradas confirma que las credenciales están registradas en Jenkins; por sí sola no demuestra que los tokens sigan vigentes, que sus scopes sean suficientes, que Jenkins pueda autenticarse contra Gitea ni que Docker Registry acepte login, push o pull.
+
+**Validaciones pendientes:** comprobar de forma controlada qué credencial corresponde a la API de Gitea y cuál se utilizará para Container Registry; verificar los permisos mínimos/scopes y la vigencia sin revelar los valores; validar conectividad TLS desde el contenedor Jenkins; y realizar login y push/pull de una imagen de prueba. No imprimir secretos en consola ni logs, y no copiar tokens a archivos versionados.
