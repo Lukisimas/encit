@@ -224,3 +224,29 @@ Esto indica que el script alcanzó su finalización sin reportar errores. La eje
 **Alcance de la evidencia:** el mensaje final es el resultado reportado por el administrador; todavía falta una inspección independiente de directorios, propietarios, modos y configuración de la red. No implica que OJS, MariaDB, el proxy o Certbot estén desplegados o funcionando.
 
 **Siguiente verificación:** inspeccionar los directorios de SSD y RAID, confirmar que todos los directorios de respaldo son `deploy:deploy` con modo `0700`, revisar los permisos de los directorios OJS con UID/GID `33:33` y confirmar que `encit_prod_edge` existe como red bridge local. No iniciar contenedores en esta etapa.
+
+
+### Verificación posterior del bootstrap
+
+**Fecha:** 26 de noviembre de 2026. El administrador ejecutó las comprobaciones de red y persistencia en producción y reportó:
+
+**Red Docker `encit_prod_edge`:**
+- Existe, con driver `bridge`, scope `local`, IPv4 habilitado e IPv6 deshabilitado.
+- Subred asignada automáticamente por Docker: `172.18.0.0/16`, gateway `172.18.0.1`.
+- No tenía contenedores conectados al momento de la inspección.
+- Docker reportó tres direcciones IP en uso en el pool, aunque no se identificaron contenedores asociados a esta red en el resultado.
+- ID: `89d355392b31b99f2d91334c9153da8205c0af5d41b71491a5aa8cc4406e7095`.
+
+**Directorios de respaldos:**
+- Existen los cinco directorios `web`, `siia`, `revista`, `cursos` y `moodle`, cada uno bajo `/data/encit/backups/<app>/prod`.
+- Todos pertenecen a `deploy:deploy` y tienen modo `0700`.
+
+**Persistencia OJS:**
+- `/srv/encit/data/revista/prod/config` y `cache`: `www-data:www-data`, modo `0750`.
+- `/srv/encit/data/revista/prod/mariadb`: `root:root`, modo `0750`; corresponde al directorio preparado antes del primer arranque de MariaDB.
+- `/data/encit/data/revista/prod/files` y `public`: `www-data:www-data`, modo `0750`.
+- Los directorios padre `/data/encit/data/revista` y `prod` pertenecen a `root:www-data`, modo `0750`, permitiendo traversal al grupo de servicio sin escritura.
+
+**Estructura RAID adicional:** existen los directorios de datos de `web`, `siia`, `cursos` y `moodle`; `moodledata` está creado bajo `/data/encit/data/moodle/prod`.
+
+**Conclusión:** la estructura, propietarios y modos reportados coinciden con el diseño del bootstrap. La red externa requerida por los Compose está creada. Esta comprobación no valida conectividad de contenedores ni despliegue de servicios; la red estaba vacía en la inspección. Antes de desplegar, conviene comprobar que `172.18.0.0/16` no se solape con redes Docker existentes, VPN o rutas institucionales. No se iniciaron contenedores ni se modificaron reglas de red.
