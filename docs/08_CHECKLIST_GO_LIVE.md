@@ -34,7 +34,9 @@
 - [ ] Inspeccionar el job inicial `prueba-gitea` y validar checkout/ejecución desde Gitea.
 - [ ] Confirmar versión Java en runtime y conectividad TLS Jenkins → Docker-in-Docker.
 - [x] Cuenta local `jenkins` creada en Gitea y confirmada por el administrador como identidad técnica prevista.
-- [ ] Generar token dedicado para `jenkins` con permisos mínimos de lectura/escritura de Packages; guardarlo como credencial segura y no en Git.
+- [x] Credencial Jenkins `gitea-jenkins-token` registrada en el almacén System / Global; descripción: `Token API Gitea - cuenta técnica Jenkins ENCiT`.
+- [x] Credencial Jenkins `gitea-jenkins-api` registrada en el ámbito System scope / System / Global; descripción: `Token API Gitea - integración Jenkins`.
+- [ ] Verificar vigencia y scopes de ambas credenciales sin revelar sus valores; confirmar cuál se utilizará para API de Gitea y cuál para Container Registry.
 - [ ] Confirmar permisos de `jenkins` sobre el namespace/paquete de prueba.
 - [x] Cliente Docker disponible en `pruebas`: CLI y Engine `29.7.2`; `sudo docker version` e `info` respondieron correctamente. Usuario `administrador` (UID 1000), sin pertenencia al grupo `docker`; se utilizará `sudo`.
 - [ ] Ejecutar `docker login` de forma interactiva y validar publicación/descarga de una imagen de prueba en Gitea Container Registry.
