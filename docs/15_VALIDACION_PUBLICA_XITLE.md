@@ -221,3 +221,19 @@ En el ruleset compartido no se observa una política `INPUT` que bloquee conexio
 **No se modificó ninguna regla ni configuración del servidor.** Las advertencias de `iptables-nft` se registran como indicación de propiedad de esas tablas; no se deben editar directamente con `nft`.
 
 **Siguiente comprobación:** consultar el estado de UFW antes de concluir la revisión del firewall local.
+
+
+### Comprobación de UFW
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Comando ejecutado:** `sudo ufw status verbose`.
+
+El servidor respondió:
+
+```text
+sudo: ufw: command not found
+```
+
+**Conclusión:** el ejecutable de UFW no está disponible en el servidor (UFW no está instalado o no está en el PATH). Por tanto, no hay un estado ni reglas de UFW que consultar mediante este comando. Esto no descarta que otro gestor, como firewalld, esté instalado o activo.
+
+No se instaló UFW ni se modificaron reglas del firewall.
