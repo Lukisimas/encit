@@ -239,7 +239,9 @@ El administrador confirma que la IP WAN correcta de OPNsense es **`132.247.168.1
 
 Las consultas directas del registro A a los DNS institucionales `132.248.10.2` y `132.248.204.1`, y como referencia a `1.1.1.1` y `8.8.8.8`, devolvieron `NXDOMAIN`. Por tanto, en el momento de la prueba no se encontró un registro DNS A para el nombre consultado. Esto no demuestra que deba publicarse: el nombre pertenece a la infraestructura interna y no se debe crear un registro público sin decisión expresa.
 
-**Corrección local pendiente de confirmar:** sustituir únicamente la entrada de `/etc/hosts` en `pruebas` para que apunte a `132.247.168.166`, y verificar con `getent`. Esta corrección local no crea un registro DNS ni cambia OPNsense. Después se debe decidir si el nombre requiere un override DNS interno para los demás equipos autorizados.
+**Corrección local aplicada y verificada:** el administrador actualizó únicamente la entrada correspondiente en `/etc/hosts` de `pruebas`, sustituyendo `132.247.168.160` por `132.247.168.166`. La salida posterior de `getent ahostsv4 git.infra.encit.unam.mx` devolvió `132.247.168.166` para STREAM, DGRAM y RAW. La resolución local en este host queda corregida.
+
+Esta modificación no crea un registro DNS ni cambia OPNsense. Las consultas A directas a los dos DNS institucionales y, como referencia, a Cloudflare y Google devolvieron `NXDOMAIN`; por ello, los demás equipos no obtendrán el nombre mediante esos resolvers mientras no exista un registro/override DNS interno apropiado. No publicar el hostname de infraestructura en DNS público.
 
 ### Estado actualizado
 
@@ -249,7 +251,7 @@ Las consultas directas del registro A a los DNS institucionales `132.248.10.2` y
 | Salud HTTP de Gitea desde el host | HTTP 200 |
 | Proxy local y virtual host de Gitea | HTTP 301 / HTTPS 200 |
 | Endpoint Registry local `/v2/` | HTTP 401 esperado sin autenticación |
-| Resolución de `git.infra.encit.unam.mx` en `pruebas` | Incorrecta: devuelve `132.247.168.160` |
+| Resolución de `git.infra.encit.unam.mx` en `pruebas` | Corregida localmente: `/etc/hosts` apunta a `132.247.168.166`; `getent` verificado |
 | IP WAN correcta confirmada por el administrador | `132.247.168.166` |
-| Corrección del registro DNS/override | Pendiente; no se modificó OPNsense |
+| Registro/override DNS interno para otros equipos | Pendiente; consultas institucionales y públicas devuelven `NXDOMAIN`; no se modificó OPNsense |
 | Login, push y pull autenticados | Pendientes |
