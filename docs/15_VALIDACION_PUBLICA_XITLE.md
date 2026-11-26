@@ -64,9 +64,14 @@ El administrador compartió las dos reglas de Port Forward para la publicación 
 
 También se observaron en **Firewall → Rules → WAN**, dentro de las reglas generadas automáticamente por Port Forward, las entradas TCP hacia `10.129.101.2:80` y `10.129.101.2:443`, ambas con la descripción `Publicación xitle.encit.unam.mx`.
 
-El administrador confirmó que los valores de la regla revisada coinciden con lo esperado: acción `Pass`, regla habilitada, destino `10.129.101.2` y puerto de destino 80. La entrada automática para HTTPS aparece en la lista con destino `10.129.101.2` y puerto 443; su configuración equivalente debe considerarse pendiente de inspección individual si se requiere evidencia de cada campo.
+El administrador confirmó individualmente que ambas reglas automáticas están configuradas con acción `Pass`, habilitadas, y con los destinos/puertos esperados:
 
-**Conclusión de configuración:** los dos Port Forward están definidos con los destinos y puertos previstos. La regla WAN HTTP revisada coincide con los valores esperados. La presencia de las reglas automáticas no prueba por sí sola la conectividad extremo a extremo; ésta se verificará cuando el servidor tenga listeners activos.
+| Regla WAN | Acción | Estado | Destino | Puerto |
+|---|---|---|---|---|
+| HTTP | Pass | Habilitada | `10.129.101.2` | 80 |
+| HTTPS | Pass | Habilitada | `10.129.101.2` | 443 |
+
+**Conclusión de configuración:** los dos Port Forward y sus reglas WAN asociadas están configurados con los destinos y puertos previstos. La presencia y configuración de estas reglas no prueba por sí sola la conectividad extremo a extremo; ésta se verificará cuando el servidor tenga listeners activos.
 
 ## Validaciones pendientes en el orden correcto
 
@@ -88,8 +93,8 @@ El administrador confirmó que los valores de la regla revisada coinciden con lo
 - [x] Registro AAAA consultado; no se observa registro AAAA publicado.
 - [x] Prueba TCP/80 y TCP/443 ejecutada desde una estación externa antes de instalar servicios; resultados registrados como línea base no concluyente para NAT/firewall.
 - [x] Port Forward TCP/80 y TCP/443 revisados: WAN address hacia `10.129.101.2`, conservando los puertos.
-- [x] Regla WAN automática de HTTP observada y valores confirmados (Pass, habilitada, destino `10.129.101.2:80`).
-- [ ] Regla WAN automática de HTTPS inspeccionada individualmente en todos sus campos.
+- [x] Regla WAN automática de HTTP confirmada (Pass, habilitada, destino `10.129.101.2:80`).
+- [x] Regla WAN automática de HTTPS confirmada (Pass, habilitada, destino `10.129.101.2:443`).
 - [ ] Firewall local del servidor revisado.
 - [ ] Servicios de producción instalados y listeners HTTP/HTTPS activos.
 - [ ] TCP/80 comprobado desde una red externa después de instalar el proxy.
