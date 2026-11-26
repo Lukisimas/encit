@@ -153,3 +153,15 @@ La API consultada sin autenticación respondió HTTP 404; no se interpreta como 
 Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. Autor: Alan Uriel Gil Casas (`alan.gil@encit.unam.mx`). La identidad Git se configuró sólo a nivel local del repositorio.
 
 **Pendiente:** inspeccionar el árbol y los archivos reales antes de diseñar e incorporar Dockerfile, Compose, Jenkinsfile y componentes OJS. La inicialización del repositorio no equivale a tener OJS instalado ni desplegado.
+
+
+### Copia local de Revista Xitle en TEST
+
+- [x] Confirmar que el repositorio remoto privado `encit/revista` está inicializado en Gitea, rama `main`, commit `9d1f0ce`, con `README.md` y `.gitignore`.
+- [x] Localizar rutas candidatas en TEST: `/home/administrador/encit_arquitectura_institucional/repos/revista`, `/srv/encit/apps/revista` y `/srv/encit/backups/revista`.
+- [x] Comprobar que la primera ruta no contiene `.git`; no es una copia Git verificada.
+- [ ] Inspeccionar contenido y propósito de `/srv/encit/apps/revista` y `/srv/encit/backups/revista` antes de usarlas.
+- [ ] Acordar una ubicación de trabajo y clonar `encit/revista` en el host TEST.
+- [ ] Verificar rama `main`, SHA del commit, `git status` y árbol de archivos en TEST.
+
+**Estado (26-nov-2026):** el repositorio remoto está publicado, pero todavía no está clonado en el servidor `pruebas` (TEST). La inspección terminó con “No se encontró una copia Git de revista en las rutas inspeccionadas”. No hay Dockerfile, Compose, Jenkinsfile ni instalación OJS local verificados en ese host.
