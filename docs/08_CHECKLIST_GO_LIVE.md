@@ -6,8 +6,11 @@
 - [x] Registro DNS público A de `xitle.encit.unam.mx` creado y apuntando a `132.247.168.166` (confirmado por el administrador).
 - [x] Resolución A de Xitle comprobada desde Cloudflare y Google; ambos devuelven `132.247.168.166` (ver `docs/15_VALIDACION_PUBLICA_XITLE.md`).
 - [x] Consulta AAAA realizada; no se observa registro AAAA publicado.
-- [ ] NAT TCP/80 y TCP/443 de OPNsense dirigido a producción (`10.129.101.2`).
+- [ ] Configuración de NAT TCP/80 y TCP/443 de OPNsense hacia producción (`10.129.101.2`) revisada.
 - [ ] Reglas de firewall WAN permiten HTTP/HTTPS conforme al NAT.
+- [ ] Firewall local del servidor permite los puertos requeridos.
+- [ ] Proxy de producción instalado y escuchando en TCP/80 y TCP/443.
+- [ ] TCP/80 y TCP/443 comprobados desde una red externa después de instalar el proxy (la prueba previa a la instalación quedó registrada como línea base no concluyente en `docs/15_VALIDACION_PUBLICA_XITLE.md`).
 - [ ] Routing y ACL del switch L3 validados.
 - [ ] DEV/TEST/INFRA no son accesibles desde Internet.
 - [ ] Jenkins/Gitea restringidos a las VLAN/usuarios autorizados.
