@@ -583,3 +583,17 @@ Redes Docker observadas: `encit_control_edge` 172.18.0.0/16; `encit-control-plat
 **PROD — host `produccion`:** SSD `/dev/sda2` ext4 en `/` (392 GiB disponibles); HDD `/dev/sdb1` ext4 en `/data` (aprox. 62 TiB disponibles); Docker Root Dir `/var/lib/docker`. Se confirmó la existencia de los directorios vacíos: SSD `/srv/encit/data/revista/prod/mariadb` (root:root 750), `config` y `cache` (www-data:www-data 750); HDD `/data/encit/data/revista/prod/files` y `public` (www-data:www-data 750). No se encontraron contenedores, incluidos detenidos. Red `encit_prod_edge` 172.18.0.0/16.
 
 **Conclusión:** persistencia TEST concentrada en SSD; persistencia PROD distribuida entre SSD (DB/config/cache) y HDD (files/public). La subred edge 172.18.0.0/16 se repite en hosts distintos, sin colisión local. No se crearon rutas, contenedores ni volúmenes, y no se modificaron permisos, DNS, OPNsense, NAT o proxy. Falta validar UID/GID de las imágenes exactas, confirmar rutas internas OJS y definir backup independiente con restauración ensayada.
+
+
+## Inventario complementario de persistencia y redes para Revista Xitle (26-nov-2026)
+
+Inspección de solo lectura ejecutada por el administrador en ambos hosts:
+
+- TEST (`pruebas`): disco `/dev/sda` de 931.5 GiB, ext4 en `/`, 847 GiB disponibles; no existe `/data`. Docker Root Dir `/var/lib/docker`. `/srv/encit/data` contiene exclusivamente las rutas identificadas de Gitea (datos y PostgreSQL) y Jenkins (home), no hay directorio Revista.
+- TEST: `encit_control_edge` = 172.18.0.0/16; redes internas Jenkins/Gitea = 172.19.0.0/16 y 172.20.0.0/16; egress Jenkins = 172.21.0.0/16. Seis contenedores de control estaban activos.
+- PROD (`produccion`): SSD `/dev/sda2` ext4 en `/`, 392 GB disponibles; HDD `/dev/sdb1` ext4 en `/data`, UUID `5d642b08-fac8-48fa-8f9b-5976c66af37c`, 62 TB disponibles. Docker Root Dir `/var/lib/docker`.
+- PROD: `encit_prod_edge` existe como bridge `172.18.0.0/16`. El inventario `docker ps -a` no devolvió contenedores.
+- PROD: existen vacíos `/srv/encit/data/revista/prod/mariadb`, `config`, `cache` y `/data/encit/data/revista/prod/files`, `public`. Permisos y propietarios observados quedan registrados en `docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md`.
+- TEST: rutas propuestas, no creadas: `/srv/encit/data/revista/test/{mariadb,files,public,config,cache}`.
+
+No se crearon directorios, no se cambiaron permisos, no se descargaron imágenes ni se iniciaron contenedores durante esta inspección. La verificación de UID/GID de las imágenes exactas y sus digests permanece pendiente.
