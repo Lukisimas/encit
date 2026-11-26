@@ -283,3 +283,20 @@ El repositorio privado Gitea `encit/revista` ya no está vacío. Se publicó en 
 La identidad de Git se configuró localmente dentro del repositorio, sin alterar la configuración global del host.
 
 Este hito sólo inicializa el control de versiones. No constituye una implementación de OJS. Antes de definir Dockerfile, Compose, Jenkinsfile, plugins o estrategia de persistencia, debe inspeccionarse el contenido real y acordarse la versión y arquitectura de OJS.
+
+
+## 14. Estado de clonación en el host TEST (26-nov-2026)
+
+El repositorio remoto privado `encit/revista` está inicializado en Gitea y contiene el commit `9d1f0ceefd44e2d04d3cc1a529ca616038ab1277` en la rama `main`, con `README.md` y `.gitignore`. Esto **no significa que exista una copia de trabajo en el servidor TEST**.
+
+La inspección de sólo lectura realizada en `pruebas` (`10.129.100.2`) encontró estas rutas:
+
+- `/home/administrador/encit_arquitectura_institucional/repos/revista`
+- `/srv/encit/apps/revista`
+- `/srv/encit/backups/revista`
+
+La primera ruta no contiene un directorio `.git`; por ello no es una copia Git verificada. Las otras dos rutas fueron localizadas, pero no se inspeccionó su contenido ni se determinó su propósito. El comando terminó indicando que no se encontró una copia Git en las rutas examinadas. El usuario confirmó que todavía no ha clonado el repositorio en `pruebas`.
+
+**Estado actual:** repositorio remoto disponible; clonación en TEST pendiente. No se ha inspeccionado todavía el contenido de trabajo en el host, ni se ha instalado/desplegado OJS. No crear, reutilizar ni sobrescribir contenido en las rutas encontradas sin inspeccionarlas y acordar previamente la ruta de clonación.
+
+**Siguiente paso:** revisar las rutas candidatas de forma no destructiva, elegir una ubicación de trabajo y clonar explícitamente `https://git.infra.encit.unam.mx/encit/revista.git` en la rama `main`. Después verificar `git status`, SHA de HEAD y árbol de archivos antes de continuar con el diseño de OJS.
