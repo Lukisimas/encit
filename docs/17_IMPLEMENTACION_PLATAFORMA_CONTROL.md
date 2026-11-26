@@ -501,3 +501,18 @@ El administrador autorizó eliminar todos los trabajos de prueba. Se ejecutó la
 El diseño detallado se documenta en [`docs/18_DISENO_CICD_XITLE_OJS.md`](18_DISENO_CICD_XITLE_OJS.md). Define el patrón build once/promote many, publicación por SHA y digest OCI, despliegue de TEST, aprobación humana para PROD, persistencia, seguridad y rollback.
 
 Este diseño es una especificación, no un Jenkinsfile ejecutable. Antes de implementarlo deben inspeccionarse los archivos reales de `repos/revista`, determinar el contexto Docker y las versiones de OJS/plugins, y validar la conectividad de despliegue remoto. La prueba de Registry con imagen temporal demuestra el canal de publicación, no la construcción ni el despliegue de OJS.
+
+## 14. Repositorio institucional de Revista Xitle en Gitea (26-nov-2026)
+
+Se creó el repositorio privado `encit/revista` dentro de la organización institucional `encit` en Gitea:
+
+- URL: [https://git.infra.encit.unam.mx/encit/revista](https://git.infra.encit.unam.mx/encit/revista)
+- Organización: `encit`.
+- Repositorio: `revista`.
+- Rama predeterminada confirmada visualmente: `main`.
+- Visibilidad: privada (seleccionada al crear el repositorio).
+- Estado inicial reportado por el administrador: no aparece `README.md`; el repositorio está pendiente de inicialización de contenido.
+
+La consulta anónima a la API de Gitea devolvió HTTP 404 para los metadatos. Como el repositorio es privado, ese resultado no demuestra que el repositorio no exista; el administrador confirmó que puede abrirlo autenticado desde la interfaz web.
+
+**Pendiente inmediato:** agregar `README.md` y `.gitignore` con reglas específicas para OJS/PHP/Docker, y confirmar el primer commit en `main`. Después se realizará el inventario de archivos y se inspeccionará el contenido real. No se ha creado todavía Jenkinsfile, Dockerfile ni Compose de OJS.
