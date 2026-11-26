@@ -28,8 +28,9 @@
 - [x] Persistencia de Gitea y Jenkins, volúmenes de Docker-in-Docker y montaje de CA institucional observados.
 - [x] Gitea Packages / Container Registry habilitado en el Compose versionado.
 - [x] Gitea Packages confirmado habilitado en `app.ini` y en `GITEA__packages__ENABLED` (ver `docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md`).
-- [x] Corregir la entrada local de `/etc/hosts` en `pruebas`: `git.infra.encit.unam.mx` ahora apunta a `132.247.168.166`; `getent ahostsv4` confirma la dirección corregida.
-- [ ] Crear/validar el registro o override DNS interno para los demás equipos autorizados. Las consultas A a DNS institucionales y públicos devolvieron `NXDOMAIN`; no publicar el hostname de infraestructura en DNS público ni considerar modificada la configuración de OPNsense.
+- [x] Corregir la entrada local de `/etc/hosts` en `pruebas`: `git.infra.encit.unam.mx` apunta a `10.129.100.2`, servidor DEV/TEST que aloja Gitea y el proxy; `getent ahostsv4` confirma la dirección.
+- [ ] Mantener separado el direccionamiento: `132.247.168.166` es la IP WAN de OPNsense para publicación de producción (NAT a `10.129.101.2`), no el destino de Gitea.
+- [ ] Crear/validar el registro o override DNS interno para los demás equipos autorizados. Las consultas A a DNS institucionales y públicos devolvieron `NXDOMAIN`; configurar, si corresponde, un override interno hacia `10.129.100.2`. No publicar el hostname de infraestructura en DNS público ni considerar modificada la configuración de OPNsense.
 - [ ] Inspeccionar el job inicial `prueba-gitea` y validar checkout/ejecución desde Gitea.
 - [ ] Confirmar versión Java en runtime y conectividad TLS Jenkins → Docker-in-Docker.
 - [ ] Validar autenticación y publicación/descarga de prueba en Gitea Container Registry.
