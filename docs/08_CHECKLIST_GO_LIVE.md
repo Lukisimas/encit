@@ -131,3 +131,14 @@ La eliminación de los jobs temporales no elimina el paquete remoto `jenkins/reg
 - [ ] Añadir aprobación manual y promoción del mismo digest a PROD.
 
 El documento describe una arquitectura propuesta; no implica que exista ya un Jenkinsfile, job productivo, Compose OJS funcional o conectividad SSH validada.
+
+### Creación del repositorio Gitea de Revista Xitle (26-nov-2026)
+
+- [x] Crear repositorio privado `encit/revista` dentro de la organización institucional `encit`.
+- [x] Confirmar visualmente la rama predeterminada `main`.
+- [x] Confirmar acceso del administrador al repositorio desde la interfaz web.
+- [ ] Agregar `README.md` y `.gitignore` y verificar el primer commit.
+- [ ] Inspeccionar el árbol y contenido real del repositorio ya inicializado.
+- [ ] Definir e incorporar Dockerfile, Compose, configuración no secreta, pruebas y Jenkinsfile según la inspección y el diseño aprobado.
+
+La API consultada sin autenticación respondió HTTP 404; no se interpreta como inexistencia porque el repositorio es privado y el administrador confirmó acceso autenticado. El repositorio todavía no contiene `README.md` según la inspección visual reportada. No se ha implementado ni desplegado OJS.
