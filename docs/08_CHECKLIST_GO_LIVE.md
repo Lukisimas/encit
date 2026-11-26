@@ -228,3 +228,15 @@ Commit inicial: `9d1f0ce` — `docs: inicializar repositorio de Revista Xitle`. 
 - [ ] Validar propietarios/permisos efectivos de los volúmenes sin alterar todavía los directorios de PROD.
 
 La inspección de almacenamiento fue de solo lectura. Las rutas de PROD ya existían antes de esta verificación; las rutas TEST siguen siendo una propuesta y no se han creado. Este registro corrige las previsiones anteriores del checklist que aún indicaban que las rutas de PROD estaban pendientes de creación.
+
+### Validación de imágenes y UID/GID (26-nov-2026)
+
+- [x] Descargar e inspeccionar php:8.3-apache-bookworm; PHP 8.3.37, digest sha256:353569a793b80b5e7e90bd750f5939e21b9f2a96b22cf77d6fa86cb0fc23570f.
+- [x] Confirmar cuenta www-data en PHP Apache: UID:GID 33:33.
+- [x] Descargar e inspeccionar mariadb:11.8.9; versión 1:11.8.9+maria~ubu2404, digest sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc.
+- [x] Confirmar cuenta mysql en MariaDB: UID:GID 999:999.
+- [ ] Validar el UID efectivo de Apache/PHP y MariaDB después del entrypoint, con servicios aislados en TEST.
+- [ ] Validar escritura y permisos de cada volumen en TEST antes de cambiar propietarios/permisos en PROD.
+- [ ] Fijar los digests de imagen en la definición de despliegue y validar el paquete OJS y sus requisitos de PHP/extensiones.
+
+Las inspecciones de identidad se realizaron en shells temporales, sin volúmenes ni servicios persistentes. No se modificaron directorios del host ni permisos de PROD.
