@@ -237,3 +237,19 @@ sudo: ufw: command not found
 **Conclusión:** el ejecutable de UFW no está disponible en el servidor (UFW no está instalado o no está en el PATH). Por tanto, no hay un estado ni reglas de UFW que consultar mediante este comando. Esto no descarta que otro gestor, como firewalld, esté instalado o activo.
 
 No se instaló UFW ni se modificaron reglas del firewall.
+
+
+### Comprobación de firewalld
+
+**Fecha de recepción:** 26 de noviembre de 2026  
+**Comando ejecutado:** `sudo systemctl is-active firewalld`.
+
+Resultado reportado:
+
+```text
+inactive
+```
+
+**Conclusión:** `firewalld` no está activo en el servidor al momento de la comprobación. Junto con la ausencia del ejecutable UFW y el ruleset `nftables` compartido (que muestra cadenas de filtrado creadas por Docker, pero no una cadena `INPUT`), no se identifica hasta ahora un gestor de firewall de host activo que esté bloqueando explícitamente conexiones dirigidas al propio servidor. Esta revisión no sustituye una prueba de conectividad entrante cuando el proxy tenga listeners.
+
+No se modificó ni habilitó ningún servicio o regla.
