@@ -306,3 +306,14 @@ La inspección reportó:
 Esta comprobación valida la disponibilidad del cliente y del daemon en el host de control. No se ejecutó `docker login`, no se guardaron credenciales y no se realizó push/pull de imágenes.
 
 **Criterio para la siguiente prueba:** antes de autenticar, definir si se utilizará una cuenta técnica dedicada de Gitea con un token de alcance mínimo para Packages (lectura/escritura según la prueba), en lugar de reutilizar la cuenta administrativa. Las credenciales deben introducirse de forma interactiva y nunca documentarse en Git.
+
+
+### Cuenta técnica de Gitea para Jenkins
+
+**Fecha:** 26 de noviembre de 2026
+
+El administrador confirmó que ya existe en Gitea el usuario local `jenkins`. La cuenta se utilizará como identidad técnica para la integración Jenkins–Gitea y las pruebas del Container Registry; no se utilizará la cuenta administrativa personal para automatizar publicaciones.
+
+**Pendiente antes de autenticar:** generar desde la sesión de Gitea del usuario `jenkins` un token de acceso dedicado a la automatización, con los permisos mínimos para leer y publicar paquetes (lectura/escritura de Packages, según los scopes que presente la instancia). El token debe guardarse como credencial segura en Jenkins o utilizarse interactivamente para la prueba inicial. No copiarlo a archivos del repositorio, variables visibles en logs ni documentación.
+
+La existencia de la cuenta no demuestra todavía que tenga permisos sobre el paquete/namespace que se usará. Antes del push de prueba se debe confirmar su acceso al propietario/organización y repositorio de paquetes correspondiente.
