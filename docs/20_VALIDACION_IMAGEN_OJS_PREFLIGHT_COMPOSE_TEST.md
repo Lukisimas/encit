@@ -187,3 +187,22 @@ No se crearon directorios, no se cambiaron permisos, no se generó configuració
 - [ ] Crear la estructura de persistencia TEST con propietarios y permisos verificados.
 - [ ] Sembrar `public` y preparar `cache` desde la imagen OJS.
 - [ ] Generar `config.inc.php` de TEST sin guardar secretos en Git.
+
+
+## 13. Verificación del montaje de almacenamiento TEST (27-nov-2026)
+
+Tras una desconexión SSH durante la primera consulta, se reconectó al host y se repitió la inspección de sólo lectura. El resultado confirmado fue:
+
+- Host: `pruebas`; usuario de sesión: `administrador`.
+- `/data` no existe en el sistema de archivos (`df: /data: No such file or directory`).
+- `/srv/encit` no es un punto de montaje independiente: `findmnt` reporta como destino `/`, dispositivo `/dev/sda1`, sistema `ext4`.
+- El sistema de archivos raíz tiene 901 GB, 14 GB usados y 842 GB disponibles en el momento de la consulta.
+
+**Conclusión operativa:** no se ha identificado ni montado en TEST el volumen dedicado previsto bajo `/data`. El espacio libre de la raíz no demuestra que sea correcto alojar ahí los datos persistentes de OJS. Se mantiene bloqueada la creación de `mariadb`, `config`, `files`, `public` y `cache`, así como la generación de `config.inc.php`, hasta confirmar el dispositivo/volumen de datos, su punto de montaje definitivo y la ruta aprobada para TEST.
+
+La desconexión SSH no produjo cambios conocidos; la consulta posterior fue de sólo lectura. No se crearon directorios, no se modificaron propietarios/permisos, no se inició ningún contenedor y no se tocó PROD.
+
+- [x] Confirmar que `/data` no existe en TEST.
+- [x] Confirmar que `/srv/encit` reside en el filesystem raíz `/dev/sda1`.
+- [ ] Identificar y montar el volumen de datos TEST conforme al diseño aprobado.
+- [ ] Revalidar el punto de montaje y la ruta definitiva antes de preparar persistencia OJS.
