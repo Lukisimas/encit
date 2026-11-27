@@ -633,3 +633,9 @@ Mapeo previsto para validar, no desplegado: config host → archivo config.inc.p
 **Riesgo de bind mounts vacíos:** un bind mount sobre public o cache oculta los archivos que trae la imagen. Inspeccionar el paquete descargable y sembrar archivos/subdirectorios requeridos antes de montar. No se cambiaron permisos ni se crearon contenedores OJS/MariaDB en esta etapa.
 
 Fuentes: repositorio oficial PKP etiqueta 3_5_0-6 y Admin Guide 3.5 (Deployment, Getting Started, Scheduled Tasks).
+
+## Inspección del paquete oficial OJS 3.5.0-6 (27-nov-2026)
+
+En TEST se descargó el tarball oficial (120,980,607 bytes), validado por lectura completa con tar. SHA-256 observado: `f5b85703b06e45cc82e56ef72b0a8f42a2f75237e5204dbd0146d9730a627c97` (no cotejado con checksum publicado).
+
+El paquete incluye `config.inc.php` y `config.TEMPLATE.inc.php`; no usar el primero sin inspeccionar contenido. `cache/` contiene `_db`, `t_cache`, `t_compile`, `t_config`; `public/index.html` existe y mide cero bytes. Un bind mount vacío ocultaría esos elementos, por lo que el volumen debe inicializarse explícitamente. README declara PHP 8.2+ y enumera bcmath, curl, dom, fileinfo, ftp, gd, intl, openssl, simplexml, xml, xmlwriter y zip como requisitos de plataforma; comprobar módulos reales de la imagen PHP y Composer. No se extrajo el paquete a persistencia ni se modificaron permisos.
