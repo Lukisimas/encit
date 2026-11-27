@@ -593,7 +593,7 @@ La revisión anterior confirma sintaxis y correspondencia estática con el templ
 - [x] Implementar `deploy/scripts/generate-config.sh` en el árbol de trabajo local de Gitea (sin commit/push).
 - [x] Validar sintaxis Bash y Python del script.
 - [x] Revisar estáticamente las guardas, directivas del template, rutas y escritura exclusiva.
-- [ ] Ejecutar una prueba controlada del generador en TEST con autorización y validar el archivo sin revelar secretos.
+- [x] Ejecutar una prueba controlada del generador en TEST con autorización y validar el archivo sin revelar secretos.
 - [ ] Incorporar los artefactos `deploy/` al seguimiento Git y publicarlos en Gitea mediante el flujo autorizado.
 - [ ] Generar `config.inc.php` de TEST fuera de Git, sólo después de la prueba controlada y autorización expresa.
 
@@ -617,3 +617,52 @@ La inspección posterior del template oficial incluido en `encit/revista:ojs-3.5
 - [ ] Corregir la actualización de `time_zone` sin duplicar la directiva.
 - [ ] Repetir la prueba controlada y validar todas las propiedades del archivo temporal.
 - [ ] Generar `config.inc.php` persistente de TEST sólo con autorización expresa posterior.
+
+
+## 26. Corrección y validación satisfactoria del generador (27-nov-2026)
+
+Después de la primera ejecución fallida registrada en la sección 25, se corrigió el bloque Python de `deploy/scripts/generate-config.sh` en el checkout local de Gitea `encit/revista`, rama `feature/ojs-3.5-dockerfile`.
+
+### Correcciones aplicadas
+
+1. La búsqueda de directivas distingue coincidencias activas y comentadas. Si existe una directiva activa, se actualiza esa línea y se conserva la muestra comentada; si sólo existe una línea comentada, se activa y configura. Los duplicados activos continúan provocando un error.
+2. Se inicializa explícitamente `lines = content.splitlines(keepends=True)` después de leer el template, conservando los finales de línea antes de recorrer y reconstruir el contenido. Esta inicialización corrigió el `NameError: name 'lines' is not defined` encontrado en la primera repetición de la prueba.
+
+El administrador reportó `bash -n` correcto y verificó que la inicialización de `lines` aparece una sola vez y antes del recorrido y la concatenación.
+
+### Prueba controlada final
+
+La prueba se ejecutó en TEST con la imagen local `encit/revista:ojs-3.5.0-6-test`, un directorio temporal y valores ficticios de base de datos. No se utilizó la ruta persistente de configuración OJS.
+
+El generador terminó con los mensajes:
+
+- `OK: config.inc.php creado de forma exclusiva.`
+- `OK: template oficial preservado con directivas acordadas.`
+- `OK: secretos generados sin mostrarlos.`
+- `OK: installed=Off; sandbox=Off; ejecutores integrados desactivados.`
+
+Las comprobaciones del archivo temporal confirmaron:
+
+- Cabecera de protección del template preservada.
+- `installed=Off`, `sandbox=Off` y `time_zone=America/Mexico_City`, con una sola directiva activa `time_zone`.
+- URL de TEST y base de datos ficticia.
+- `files_dir="/var/ojs-files"` y `public_files_dir="public"`.
+- `force_ssl=On`, SMTP configurado hacia `mailpit:1025`, worker y scheduler integrados desactivados.
+- `app_key` Base64 decodifica a 32 bytes; `salt` y `api_key_secret` tienen 64 caracteres hexadecimales y son distintos.
+- Propietario numérico `33:33`, modo `0640` y lectura efectiva por el usuario `www-data`.
+- Un segundo intento rechazó la existencia de `config.inc.php`; el SHA-256 del archivo permaneció idéntico, confirmando que no se sobrescribió.
+
+Durante la prueba de lectura se ajustó el permiso de recorrido del directorio temporal de prueba a `0711`. El archivo conservó `33:33` y `0640`; el ajuste no se aplicó a la persistencia de OJS.
+
+**Resultado:** prueba controlada satisfactoria. Queda validado el comportamiento de generación, permisos, lectura y no sobrescritura del generador con la imagen y valores de prueba observados.
+
+### Límites y estado operativo
+
+La prueba generó únicamente un archivo temporal, eliminado al finalizar el procedimiento. No se creó `config.inc.php` en `/srv/encit/data/revista/test/config`, no se inició Compose ni ningún contenedor OJS/MariaDB, no se publicaron artefactos en Gitea y no se modificó PROD. La configuración persistente de TEST sigue pendiente de autorización expresa independiente.
+
+- [x] Corregir la selección de directivas activas/comentadas y la inicialización de `lines`.
+- [x] Repetir la prueba controlada con valores ficticios.
+- [x] Validar contenido, formato de secretos, propietario, modo y lectura por `www-data`.
+- [x] Verificar rechazo de sobrescritura y conservación del archivo.
+- [ ] Generar `config.inc.php` persistente de TEST sólo con autorización expresa posterior.
+- [ ] Validar Compose y obtener autorización independiente antes de iniciar servicios.
