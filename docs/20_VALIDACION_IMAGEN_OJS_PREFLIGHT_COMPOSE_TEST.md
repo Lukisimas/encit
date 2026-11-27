@@ -148,7 +148,6 @@ Se verificó en el host `pruebas` el repositorio local `/srv/encit/apps/revista/
 - Docker Compose: `v5.5.0`.
 
 No existen en ese checkout los archivos `deploy/testing/docker-compose.yml`, `deploy/testing/.env`, `deploy/testing/.env.example` ni `deploy/production/docker-compose.yml`. Esto es consistente con la separación de repositorios: el checkout Gitea `encit/revista` contiene el artefacto de aplicación OJS; los manifiestos de despliegue pertenecen al repositorio GitHub `Lukisimas/encit`, rama `docs/storage-xitle-hostnames`, PR #1.
-
 Se volvieron a consultar los manifiestos directamente en la rama del PR. Se confirmó que TEST y PROD mantienen los destinos de volumen `/var/ojs-files`, la referencia MariaDB fijada por digest y el aislamiento de red documentado en la sección 9. El ejemplo de entorno TEST conserva `IMAGE_TAG=3.5.0-5-REPLACE_WITH_TESTED_TAG`; es un marcador pendiente y no debe usarse como etiqueta de despliegue.
 
 **Resultado:** todavía no se ejecutó `docker compose config`. No se copiarán manifiestos a Gitea ni se crearán archivos en TEST hasta definir un procedimiento de validación que use exactamente los archivos versionados del PR y valores de entorno de prueba no secretos. No se inició ningún contenedor ni se modificó persistencia o PROD.
@@ -297,8 +296,7 @@ En el host TEST, los directorios persistentes `public` y `files` existen vacíos
 
 La copia/creación anterior es un procedimiento propuesto, no una operación ya realizada. No se cambiaron permisos, propietarios ni contenidos; no se creó `cache`, no se generó `config.inc.php`, no se inició ningún contenedor OJS/MariaDB y no se modificó PROD.
 
-- [x] Inspeccionar contenido inicial y permisos de `public` y `cache` en la imagen.
-- [x] Confirmar UID/GID OJS `33:33` y modos `0750` de los directorios.
+- [x] Inspeccionar contenido inicial y permisos de `public` y `cache` en la imagen.- [x] Confirmar UID/GID OJS `33:33` y modos `0750` de los directorios.
 - [ ] Sembrar `public` y `cache` en TEST, preservando propietario y modos, con autorización explícita.
 - [ ] Generar `config.inc.php` de TEST sin secretos en Git.
 - [ ] Validar Compose con los valores de entorno previstos antes de iniciar servicios.
@@ -443,3 +441,28 @@ El administrador autorizó preparar los directorios persistentes `public` y `cac
 - [ ] Confirmar guardas de directorios vacíos/ausentes.
 - [ ] Copiar contenido inicial preservando UID/GID y modos.
 - [ ] Verificar resultado en TEST.
+
+## 21. Siembra y validación de `public` y `cache` en TEST (27-nov-2026)
+
+El administrador ejecutó en el host `pruebas` la copia autorizada desde la imagen local `encit/revista:ojs-3.5.0-6-test`. La prevalidación confirmó el ID de imagen `sha256:fc6c786114056dc70319c2a04f4a26389ab80f9b85613cbba1074b6a792146c5`, que `public` existía vacío y que `cache` no existía antes de la extracción.
+
+La operación utilizó un contenedor temporal con `tar` para exportar `/var/www/html/public` y `/var/www/html/cache`, y extrajo el archivo en el host con `tar --numeric-owner -xpf`. El comando terminó sin error y las comprobaciones posteriores reportaron:
+
+| Ruta persistente TEST | Propietario numérico | Modo | Contenido verificado |
+|---|---:|---:|---|
+| `/srv/encit/data/revista/test/public` | `33:33` | `0750` | `index.html`, propietario `www-data:www-data`, modo `0640` |
+| `/srv/encit/data/revista/test/cache` | `33:33` | `0750` | `_db`, `t_cache`, `t_compile`, `t_config`; todos directorios `0750`, propietario `www-data:www-data` |
+
+La validación final del administrador comprobó explícitamente que ambos directorios raíz conservan UID/GID `33:33` y modo `0750`. El listado recursivo confirmó el contenido inicial esperado. La operación no requirió modificar propietarios ni modos después de la extracción.
+
+**Resultado:** siembra de `public` y `cache` completada y verificada en TEST. Queda resuelta esta precondición de persistencia para los bind mounts OJS.
+
+**Límites y estado restante:** esta operación no creó ni modificó `config.inc.php`, no inició Compose ni contenedores OJS/MariaDB, no publicó la imagen en Registry, no sustituyó el marcador de `IMAGE_TAG` y no modificó PROD. Antes de iniciar servicios todavía deben prepararse y validar la configuración privada de TEST, confirmar una referencia de imagen publicada/validada y completar el preflight de Compose.
+
+- [x] Confirmar que `public` existía vacío y `cache` no existía antes de copiar.
+- [x] Copiar ambos directorios desde la imagen OJS preservando UID/GID numéricos y modos.
+- [x] Verificar `public` con propietario `33:33`, modo `0750` y archivo `index.html` modo `0640`.
+- [x] Verificar `cache` con propietario `33:33`, modo `0750` y los cuatro subdirectorios esperados modo `0750`.
+- [ ] Generar y validar `config.inc.php` de TEST fuera de Git.
+- [ ] Confirmar/publicar una referencia inmutable de la imagen OJS antes de Compose.
+- [ ] Validar Compose y obtener autorización independiente antes de iniciar servicios.
