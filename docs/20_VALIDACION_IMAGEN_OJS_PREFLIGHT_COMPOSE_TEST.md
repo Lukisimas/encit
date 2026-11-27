@@ -118,7 +118,7 @@ La imagen MariaDB está disponible localmente y su RepoDigest permite fijar una 
 - [x] Confirmar que el directorio de datos MariaDB ya coincide numéricamente con `999:999`.
 - [x] Confirmar que `cache` no existe.
 - [x] Decidir y fijar la referencia por digest de MariaDB 11.8.9 en Compose TEST y PROD; la descarga desde PROD sigue pendiente de validación.
-- [ ] Corregir el destino de `files_dir` y el aislamiento de redes en Compose.
+- [x] Corregir el destino de `files_dir` y el aislamiento de redes en Compose.
 - [ ] Crear `cache` con propietario `33:33` y modo mínimo después de validar el procedimiento.
 - [ ] Inicializar `public` desde la imagen OJS antes de montar el bind mount vacío.
 - [ ] Generar y revisar la configuración TEST de forma segura, sin registrar secretos.
