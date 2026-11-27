@@ -666,3 +666,19 @@ La prueba generó únicamente un archivo temporal, eliminado al finalizar el pro
 - [x] Verificar rechazo de sobrescritura y conservación del archivo.
 - [ ] Generar `config.inc.php` persistente de TEST sólo con autorización expresa posterior.
 - [ ] Validar Compose y obtener autorización independiente antes de iniciar servicios.
+
+
+## 27. Preparación del entorno privado TEST: bloqueo de sudoedit (27-nov-2026)
+
+Durante la preparación del archivo privado `deploy/testing/.env` en el host `pruebas`, el preflight anterior había confirmado que el archivo no existía o no era legible. Se ejecutó la copia de `.env.example` con `sudo install -m 600` y, a continuación, se intentó abrir el destino con `sudoedit`.
+
+La edición no llegó a iniciarse: `sudoedit` rechazó la ruta con el mensaje `editing files in a writable directory is not permitted`. La sesión SSH se cerró después del error. Esta protección impide que `sudoedit` edite directamente archivos situados en un directorio modificable por el usuario invocador.
+
+**Estado:** no se ha confirmado todavía si `deploy/testing/.env` quedó creado por el paso `install`, ni se han configurado o validado las credenciales reales. No se debe asumir que el archivo está listo. El siguiente paso es inspeccionar únicamente su existencia, propietario y modo; si no existe, preparar el contenido en un archivo temporal privado propiedad del usuario, editarlo sin privilegios y copiarlo al destino con permisos `0600` sólo después de comprobar que el destino no existe. No imprimir ni incorporar el contenido del `.env` a Git.
+
+El error no ejecutó `generate-config.sh`, no creó ni modificó `config.inc.php`, no inició Compose ni contenedores OJS/MariaDB y no modificó PROD.
+
+- [x] Registrar el rechazo de `sudoedit` y la causa indicada por la herramienta.
+- [ ] Inspeccionar existencia, propietario y modo de `deploy/testing/.env` sin mostrar su contenido.
+- [ ] Completar el archivo privado TEST con credenciales independientes y validar sus variables sin revelarlas.
+- [ ] Generar `config.inc.php` persistente únicamente después de superar el preflight y con autorización expresa.
