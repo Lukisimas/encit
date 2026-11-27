@@ -61,9 +61,14 @@ El DNS público de los servicios productivos se administra conforme a la delegac
 
 ## Persistencia y almacenamiento
 
-Los archivos de despliegue y configuración operativa se guardan bajo `/srv/encit/apps/<app>/<entorno>`. Los datos de baja latencia (bases de datos, configuración de aplicaciones y cachés) se alojan bajo `/srv/encit/data/<app>/<entorno>`, en el SSD RAID1.
+Los archivos de despliegue y configuración operativa se guardan bajo `/srv/encit/apps/<app>/<entorno>`. La ruta de datos de baja latencia y persistencia de cada aplicación es `/srv/encit/data/<app>/<entorno>`.
 
-Los archivos voluminosos y respaldos locales de producción se alojan en el RAID5 montado en `/data`, bajo `/data/encit/data/<app>/prod` y `/data/encit/backups/<app>/prod`, respectivamente. El detalle del hardware, sistema de archivos y rutas se documenta en [Almacenamiento de producción](13_ALMACENAMIENTO_PRODUCCION.md).
+La capacidad física difiere por ambiente:
+
+- **DEV/TEST (servidor de control):** un solo disco. La persistencia se aloja en el filesystem disponible bajo `/srv/encit/data/<app>/<entorno>`; no se espera ni se requiere un segundo disco o un montaje independiente en `/data`.
+- **PROD:** dos arreglos/discos lógicos. El SSD RAID1 aloja sistema, Docker y datos de baja latencia bajo `/srv/encit/data/<app>/prod`. El HDD RAID5 se monta en `/data` y aloja archivos voluminosos y respaldos locales bajo `/data/encit/data/<app>/prod` y `/data/encit/backups/<app>/prod`, respectivamente.
+
+El detalle del hardware, sistema de archivos y rutas exclusivas de producción se documenta en [Almacenamiento de producción](13_ALMACENAMIENTO_PRODUCCION.md).
 
 ## Separación de capas
 
