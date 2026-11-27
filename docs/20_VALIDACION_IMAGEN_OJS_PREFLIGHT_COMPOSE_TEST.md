@@ -170,3 +170,20 @@ Esta comprobación confirma únicamente que el manifiesto supera la validación 
 La validación no inició contenedores ni modificó la persistencia. No se ejecutó ninguna acción en PROD.
 
 **Siguientes pasos pendientes:** preparar e inicializar los directorios persistentes de TEST, generar la configuración OJS de TEST sin exponer secretos y, con autorización antes de iniciar servicios, validar primero MariaDB y después OJS y el proxy. La descarga del digest MariaDB desde PROD continúa pendiente y requiere autorización específica antes de acceder a ese host.
+
+
+## 12. Revisión actual de persistencia TEST (27-nov-2026)
+
+En una nueva inspección de sólo lectura del host `pruebas` se confirmó que actualmente no existe la ruta raíz `/srv/encit/data/revista/test`; por tanto, tampoco existen sus subdirectorios previstos `mariadb`, `config`, `files`, `public` y `cache`. No se encontró `config.inc.php` y no aparecen contenedores OJS/MariaDB en `docker ps -a`.
+
+La imagen local `encit/revista:ojs-3.5.0-6-test` sigue presente con ID `sha256:fc6c786114056dc70319c2a04f4a26389ab80f9b85613cbba1074b6a792146c5`, tamaño 297,988,323 bytes y fecha de creación `2026-11-27T14:04:08.741685589-06:00`.
+
+Este resultado difiere de la inspección anterior registrada en las secciones 4 y 7, donde se reportaron directorios persistentes existentes. Se conserva el resultado más reciente como estado observado; no se infiere si los directorios fueron eliminados, movidos o si la inspección anterior correspondía a otra ruta/momento. Antes de inicializar persistencia debe confirmarse la ruta definitiva y el montaje de almacenamiento previsto en la arquitectura del host.
+
+No se crearon directorios, no se cambiaron permisos, no se generó configuración, no se inició ningún contenedor y no se modificó PROD.
+
+- [x] Reinspeccionar la ruta de persistencia TEST y la presencia de contenedores.
+- [ ] Confirmar la ruta/montaje de almacenamiento TEST antes de crear directorios persistentes.
+- [ ] Crear la estructura de persistencia TEST con propietarios y permisos verificados.
+- [ ] Sembrar `public` y preparar `cache` desde la imagen OJS.
+- [ ] Generar `config.inc.php` de TEST sin guardar secretos en Git.
