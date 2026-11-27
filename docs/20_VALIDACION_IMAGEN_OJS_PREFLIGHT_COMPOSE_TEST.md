@@ -422,3 +422,24 @@ La salida confirma que ambos procesos pueden atravesar los directorios padre sin
 - [ ] Sembrar `public` y `cache` en TEST, con autorización explícita.
 - [ ] Generar `config.inc.php` de TEST fuera de Git.
 - [ ] Validar Compose con los valores de entorno previstos antes de iniciar servicios.
+
+
+## 20. Autorización para sembrar `public` y `cache` en TEST (27-nov-2026)
+
+El administrador autorizó preparar los directorios persistentes `public` y `cache` de OJS en el host TEST `pruebas`, tomando como origen el contenido incluido en la imagen local `encit/revista:ojs-3.5.0-6-test`.
+
+**Alcance autorizado:**
+- Copiar `/var/www/html/public` y `/var/www/html/cache` desde la imagen a `/srv/encit/data/revista/test/public` y `/srv/encit/data/revista/test/cache`.
+- Preservar propietarios/grupos numéricos y modos mediante archivo tar.
+- Verificar propietario, modo y contenido resultante.
+
+**Guardas del procedimiento:** antes de copiar, comprobar que `public` existe y está vacío, y que `cache` todavía no existe. Si alguna condición no se cumple, detenerse sin sobrescribir ni borrar datos. La extracción conserva UID/GID numéricos y modos del contenido de la imagen. La ejecución se realiza en TEST por el administrador; esta sesión no dispone de acceso SSH al host.
+
+**No incluido en esta autorización:** crear o modificar `config.inc.php`, iniciar Compose o contenedores, publicar la imagen, modificar PROD o cambiar otros directorios persistentes.
+
+**Estado:** autorizado; procedimiento entregado para ejecución. La siembra y su validación efectiva quedan pendientes de la salida del host.
+
+- [x] Obtener autorización explícita para sembrar `public` y `cache` en TEST.
+- [ ] Confirmar guardas de directorios vacíos/ausentes.
+- [ ] Copiar contenido inicial preservando UID/GID y modos.
+- [ ] Verificar resultado en TEST.
