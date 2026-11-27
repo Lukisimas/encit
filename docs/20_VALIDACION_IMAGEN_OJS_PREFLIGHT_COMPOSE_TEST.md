@@ -302,3 +302,34 @@ La copia/creación anterior es un procedimiento propuesto, no una operación ya 
 - [ ] Sembrar `public` y `cache` en TEST, preservando propietario y modos, con autorización explícita.
 - [ ] Generar `config.inc.php` de TEST sin secretos en Git.
 - [ ] Validar Compose con los valores de entorno previstos antes de iniciar servicios.
+
+
+## 17. Montajes Compose TEST y recorrido de directorios padre (27-nov-2026)
+
+Se releyó el manifiesto `repos/revista/deploy/testing/docker-compose.yml` y su `.env.example` directamente desde esta rama del PR.
+
+Los bind mounts definidos son:
+
+| Variable | Origen en TEST | Destino |
+|---|---|---|
+| `MARIADB_DATA_DIR` | `/srv/encit/data/revista/test/mariadb` | `/var/lib/mysql` |
+| `OJS_CONFIG_DIR` + `config.inc.php` | `/srv/encit/data/revista/test/config/config.inc.php` | `/var/www/html/config.inc.php` |
+| `OJS_FILES_DIR` | `/srv/encit/data/revista/test/files` | `/var/ojs-files` |
+| `OJS_PUBLIC_DIR` | `/srv/encit/data/revista/test/public` | `/var/www/html/public` |
+| `OJS_CACHE_DIR` | `/srv/encit/data/revista/test/cache` | `/var/www/html/cache` |
+
+El manifiesto comparte estos volúmenes entre `web`, `worker` y `scheduler`; MariaDB monta únicamente su propio directorio de datos. El ejemplo de entorno conserva `IMAGE_TAG=3.5.0-5-REPLACE_WITH_TESTED_TAG`, por lo que no es apto para iniciar el stack hasta que exista una etiqueta de imagen publicada y aprobada.
+
+La inspección del host mostró `/srv/encit/data/revista` y su hijo `test` como `root:root`, modo `0750`. Los procesos de los contenedores usan UID/GID OJS `33:33` y MariaDB `999:999`. Los permisos de recorrido de los directorios padre también se aplican a los procesos dentro de los contenedores: un bind mount no elimina las comprobaciones DAC del filesystem del host. Por tanto, antes de iniciar los servicios hay que conceder permiso de búsqueda (execute) a los UID que correspondan en ambos directorios padre, sin conceder lectura/listado innecesario ni abrirlos a todos los usuarios.
+
+No se ha aplicado ACL ni cambiado modo/propietario. `getfacl` y `setfacl` no están instalados en TEST, de modo que aún no se ha consultado ni configurado ACL extendida. Debe elegirse un mecanismo mínimo (preferentemente ACL nominativa para UID 33 y 999) y autorizarse antes de modificar el host. No se ha instalado ningún paquete.
+
+No se ejecutó Compose, no se inició ningún contenedor, no se creó `cache` ni `config.inc.php`, no se copiaron archivos de la imagen y no se modificó PROD.
+
+- [x] Releer Compose TEST y `.env.example` desde la rama del PR.
+- [x] Relacionar cada variable de persistencia con su destino de montaje.
+- [x] Identificar que los procesos de contenedor requieren recorrido de los directorios padre del host.
+- [ ] Definir y autorizar permisos mínimos de recorrido para UID 33 y 999.
+- [ ] Crear/sembrar `cache` y `public` con propietarios y modos correctos.
+- [ ] Generar `config.inc.php` de TEST fuera de Git.
+- [ ] Sustituir el marcador de `IMAGE_TAG` por una referencia publicada y validada antes de desplegar.
