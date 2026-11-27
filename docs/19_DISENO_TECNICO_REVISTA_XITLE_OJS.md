@@ -689,3 +689,16 @@ Se revisó el código fuente oficial PKP en la etiqueta `3_5_0-6`, junto con la 
 **Precaución con bind mounts vacíos:** montar el directorio host `public` o `cache` encima de los directorios de la imagen oculta su contenido inicial. Antes de montar, se debe comprobar si el paquete trae archivos de protección o subdirectorios necesarios y sembrarlos en el volumen persistente. No aplicar todavía `chown` ni cambios de permisos en TEST o PROD.
 
 Fuentes oficiales consultadas: [OJS 3.5.0-6 source tree](https://github.com/pkp/ojs/tree/3_5_0-6), [configuration template](https://github.com/pkp/ojs/blob/3_5_0-6/config.TEMPLATE.inc.php), [PKP Admin Guide — Deployment](https://docs.pkp.sfu.ca/admin-guide/en/deploy), [PKP Admin Guide — Getting Started](https://docs.pkp.sfu.ca/admin-guide/en/getting-started), [Scheduled Tasks](https://docs.pkp.sfu.ca/admin-guide/en/deploy-scheduled-tasks).
+
+### Inspección del paquete oficial OJS 3.5.0-6 (27-nov-2026)
+
+En TEST se descargó el paquete desde `https://pkp.sfu.ca/ojs/download/ojs-3.5.0-6.tar.gz`. La descarga fue de 120,980,607 bytes; `tar -tzf` pudo leer el archivo completo. SHA-256 calculado: `f5b85703b06e45cc82e56ef72b0a8f42a2f75237e5204dbd0146d9730a627c97`. Este hash es el observado localmente; no se cotejó con un checksum publicado por PKP.
+
+Hallazgos del contenido:
+- La raíz del paquete contiene `config.inc.php` y `config.TEMPLATE.inc.php`; inspeccionar el contenido de `config.inc.php` antes de usarlo o decidir el proceso de generación.
+- `cache/` contiene los directorios `_db`, `t_cache`, `t_compile` y `t_config`; no se encontraron archivos `.gitignore` en esas rutas del tarball.
+- `public/` contiene `index.html` de cero bytes.
+- El template configura `files_dir = files` y `public_files_dir = public`.
+- El README del paquete indica PHP 8.2+ y lista requisitos Composer/platform como bcmath, curl, dom, fileinfo, ftp, gd, intl, openssl, simplexml, xml, xmlwriter y zip; mbstring aparece cubierto por polyfill en la salida de Composer incluida en README. Verificar el runtime real con `php -m` y Composer antes de construir la imagen definitiva.
+
+Implicaciones para volúmenes: los bind mounts vacíos sobre `cache` y `public` ocultan el contenido incluido en la imagen. Inicializar los subdirectorios cache y el archivo vacío `public/index.html` en el volumen persistente antes de montar, o diseñar una inicialización controlada que los siembre. No copiar el `config.inc.php` incluido sin revisar sus valores y secretos de ejemplo. No se extrajo el paquete en rutas persistentes ni se cambiaron permisos.
