@@ -84,3 +84,41 @@ El Compose de producción comparte el destino incorrecto `/var/www/ojs-files`; d
 - [ ] Publicar la imagen OJS en Gitea Registry mediante el pipeline aprobado.
 
 **Conclusión:** la imagen OJS 3.5.0-6 está construida y validada a nivel de imagen en TEST, pero los Compose versionados aún tienen inconsistencias de rutas y aislamiento de red, y faltan precondiciones de configuración y persistencia. No hay despliegue OJS/MariaDB y no se modificó PROD.
+
+
+## 7. Validación de imagen MariaDB y UID/GID (27-nov-2026)
+
+En el host TEST se inspeccionó la imagen MariaDB disponible localmente:
+
+- Etiqueta: `mariadb:11.8.9`.
+- ID de imagen: `sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc`.
+- RepoDigest local: `mariadb@sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc`.
+- Versión reportada por `mariadbd`: `11.8.9-MariaDB-ubu2404`.
+- Usuario/grupo del proceso: `mysql`, UID/GID `999:999`.
+
+El directorio persistente TEST `/srv/encit/data/revista/test/mariadb` tiene propietario numérico `999:999` y modo `0750`. El nombre de grupo que muestra el host (`systemd-journal`) no cambia la coincidencia numérica con el GID del contenedor. **No cambiar propietario ni permisos de este directorio por el momento.**
+
+La inspección de almacenamiento confirmó:
+
+| Directorio | Propietario numérico | Modo | Estado |
+|---|---:|---:|---|
+| `mariadb` | `999:999` | `0750` | Existe, vacío |
+| `config` | `33:33` | `0750` | Existe, vacío |
+| `files` | `33:33` | `0750` | Existe, vacío |
+| `public` | `33:33` | `0750` | Existe, vacío |
+| `cache` | — | — | No existe |
+
+La imagen MariaDB está disponible localmente y su digest permite fijar una referencia inmutable para TEST. Antes de editar el manifiesto se debe confirmar que se desea usar exactamente esta build local; no se debe inferir que ese digest ya fue publicado o validado en Registry.
+
+## 8. Resultado actualizado y siguientes precondiciones
+
+- [x] Confirmar MariaDB 11.8.9 local y registrar ID/digest.
+- [x] Confirmar UID/GID MariaDB `999:999`.
+- [x] Confirmar que el directorio de datos MariaDB ya coincide numéricamente con `999:999`.
+- [x] Confirmar que `cache` no existe.
+- [ ] Decidir y fijar la referencia por digest de MariaDB en Compose TEST; PROD requiere una decisión de promoción separada.
+- [ ] Corregir el destino de `files_dir` y el aislamiento de redes en Compose.
+- [ ] Crear `cache` con propietario `33:33` y modo mínimo después de validar el procedimiento.
+- [ ] Inicializar `public` desde la imagen OJS antes de montar el bind mount vacío.
+- [ ] Generar y revisar la configuración TEST de forma segura, sin registrar secretos.
+- [ ] Validar Compose estáticamente antes de iniciar contenedores.
