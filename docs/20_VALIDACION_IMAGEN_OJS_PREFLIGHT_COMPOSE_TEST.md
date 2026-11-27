@@ -513,3 +513,31 @@ No se generó `config.inc.php`, no se creó el generador, no se inició Compose 
 - [ ] Generar y validar `config.inc.php` de TEST fuera de Git.
 - [ ] Ejecutar y validar worker/scheduler con configuración y base de datos funcionales.
 - [ ] Validar Compose y obtener autorización independiente antes de iniciar servicios.
+
+## 23. Decisión de sandbox para TEST y ejecución de procesos externos (27-nov-2026)
+
+El administrador confirmó que el entorno TEST debe operar con `sandbox = Off` para permitir la validación funcional de los procesos CLI dedicados de OJS identificados en la sección 22.
+
+La decisión se basa en el comportamiento comprobado del código de OJS 3.5.0-6: tanto `jobs.php work` como `scheduler.php work` se niegan a procesar trabajos/tareas cuando `general.sandbox` está activado. Por tanto, mantener `sandbox = On` sería incompatible con el objetivo de probar esos procesos.
+
+**Configuración acordada para TEST:**
+- `[general] sandbox = Off`.
+- `[queues] job_runner = Off`, para que las solicitudes web no ejecuten también el procesador integrado.
+- `[schedule] task_runner = Off`, para delegar las tareas programadas al scheduler externo.
+- `[queues] process_jobs_at_task_scheduler = Off`, manteniendo al worker dedicado como consumidor de la cola y evitando que el scheduler procese trabajos en paralelo.
+- El worker dedicado se ejecutará mediante `php lib/pkp/tools/jobs.php work`.
+- El scheduler dedicado se ejecutará mediante `php lib/pkp/tools/scheduler.php work`.
+
+**Control de integraciones externas:** al desactivar sandbox, TEST ya no cuenta con esa barrera de OJS frente a interacciones con sistemas externos. El correo de TEST deberá configurarse explícitamente hacia Mailpit (SMTP interno, puerto 1025) y no hacia servidores SMTP reales. Cualquier otra integración externa deberá permanecer sin configurar o bloqueada durante las pruebas, salvo autorización específica.
+
+La variable `OJS_SANDBOX` del ejemplo de entorno TEST debe cambiar a `Off` para reflejar esta decisión. La plantilla de PROD permanece independiente y no se modifica con esta decisión.
+
+**Estado:** decisión aprobada por el administrador; falta aplicar el cambio en el repositorio Gitea `encit/revista`, rama `feature/ojs-3.5-dockerfile`, y posteriormente implementar el generador de configuración. No se ha generado `config.inc.php`, no se ha iniciado Compose ni contenedores, no se ha probado worker/scheduler contra una base de datos y no se ha modificado PROD.
+
+- [x] Aprobar `sandbox = Off` para TEST con el fin de validar worker y scheduler.
+- [x] Definir el worker dedicado como consumidor de la cola.
+- [x] Definir scheduler externo sin procesamiento de cola integrado.
+- [x] Establecer Mailpit como destino SMTP de TEST y excluir SMTP real.
+- [ ] Actualizar `deploy/testing/.env.example` en Gitea.
+- [ ] Generar y validar `config.inc.php` de TEST fuera de Git.
+- [ ] Ejecutar y validar worker/scheduler con configuración y base de datos funcionales.
