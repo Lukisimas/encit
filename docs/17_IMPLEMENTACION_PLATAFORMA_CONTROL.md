@@ -639,3 +639,17 @@ Fuentes: repositorio oficial PKP etiqueta 3_5_0-6 y Admin Guide 3.5 (Deployment,
 En TEST se descargó el tarball oficial (120,980,607 bytes), validado por lectura completa con tar. SHA-256 observado: `f5b85703b06e45cc82e56ef72b0a8f42a2f75237e5204dbd0146d9730a627c97` (no cotejado con checksum publicado).
 
 El paquete incluye `config.inc.php` y `config.TEMPLATE.inc.php`; no usar el primero sin inspeccionar contenido. `cache/` contiene `_db`, `t_cache`, `t_compile`, `t_config`; `public/index.html` existe y mide cero bytes. Un bind mount vacío ocultaría esos elementos, por lo que el volumen debe inicializarse explícitamente. README declara PHP 8.2+ y enumera bcmath, curl, dom, fileinfo, ftp, gd, intl, openssl, simplexml, xml, xmlwriter y zip como requisitos de plataforma; comprobar módulos reales de la imagen PHP y Composer. No se extrajo el paquete a persistencia ni se modificaron permisos.
+
+ 
+### Verificación de extensiones PHP para OJS (27-nov-2026)
+
+- [x] Comprobar PHP 8.3.37 en `php:8.3-apache-bookworm`.
+- [x] Verificar extensiones PHP de la lista de requisitos de OJS 3.5.0-6.
+- [x] Registrar faltantes: `bcmath`, `ftp`, `gd`, `intl`, `zip`, `pdo_mysql` y `mysqli`.
+- [x] Confirmar disponibles: `curl`, `dom`, `fileinfo`, `openssl`, `simplexml`, `xml`, `xmlwriter`, `mbstring` y `zlib`.
+- [ ] Preparar Dockerfile reproducible con las extensiones faltantes.
+- [ ] Construir imagen en TEST y comprobar módulos tanto en CLI como en Apache.
+- [ ] Ejecutar `composer check-platform-reqs` con el paquete OJS fijado.
+- [ ] Validar instalación y pruebas funcionales antes de promover la imagen a PROD.
+
+La imagen base se mantiene sin modificar; no se instalaron paquetes en servidores ni contenedores persistentes.
