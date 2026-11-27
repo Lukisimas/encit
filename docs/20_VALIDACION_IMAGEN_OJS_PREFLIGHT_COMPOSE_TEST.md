@@ -466,3 +466,50 @@ La validación final del administrador comprobó explícitamente que ambos direc
 - [ ] Generar y validar `config.inc.php` de TEST fuera de Git.
 - [ ] Confirmar/publicar una referencia inmutable de la imagen OJS antes de Compose.
 - [ ] Validar Compose y obtener autorización independiente antes de iniciar servicios.
+
+
+## 22. Inspección estática de herramientas CLI de OJS (27-nov-2026)
+
+Se inspeccionaron, dentro de la imagen local `encit/revista:ojs-3.5.0-6-test`, las herramientas CLI de PKP/OJS para determinar cómo ejecutar el procesamiento de colas y las tareas programadas. La inspección fue de sólo lectura; no se creó configuración ni se inició ningún servicio.
+
+### Resultado de ejecución inicial
+
+Se intentó consultar la ayuda de:
+
+- `lib/pkp/tools/jobs.php`
+- `lib/pkp/tools/scheduler.php`
+
+Ambos archivos existen en la imagen. Sin embargo, la ejecución terminó con `Cannot read configuration file /var/www/html/config.inc.php`, porque dicho archivo todavía no existe. Este resultado es una dependencia de configuración esperada y no demuestra un defecto de la imagen ni de las herramientas CLI.
+
+### Comportamiento confirmado por inspección del código
+
+- `php lib/pkp/tools/jobs.php work` inicia el worker daemon de colas. Lee la conexión y la cola desde `[queues]` y admite parámetros para nombre, backoff, memoria, timeout, sleep, intentos, máximo de trabajos y tiempo máximo.
+- `php lib/pkp/tools/scheduler.php work` inicia el modo daemon del scheduler. El proceso espera el cambio de minuto y lanza la operación `run` una vez por minuto.
+- `php lib/pkp/tools/scheduler.php run` procesa las tareas programadas que estén vencidas.
+- Tanto el worker como el scheduler comprueban el modo mantenimiento y `[general] sandbox`. Si `sandbox = On`, ambos se niegan a procesar trabajos/tareas y muestran un mensaje de error.
+- `[queues] job_runner = On` habilita el procesamiento integrado de trabajos al final de solicitudes web.
+- `[schedule] task_runner = On` habilita el scheduler integrado al final de solicitudes web.
+- `[queues] process_jobs_at_task_scheduler` controla si las tareas programadas procesan también trabajos de la cola; su valor predeterminado en la plantilla es `Off`.
+
+### Decisiones para el diseño de servicios
+
+Para una arquitectura con procesos externos dedicados, la configuración deberá considerar:
+
+- `job_runner = Off`, para evitar que las solicitudes web procesen trabajos además del worker daemon.
+- `task_runner = Off`, para evitar ejecutar el scheduler integrado en cada ciclo de solicitudes web.
+- Mantener `process_jobs_at_task_scheduler = Off` si el worker dedicado es el único consumidor de la cola; cambiarlo sólo si se decide explícitamente que el scheduler también procese trabajos.
+- No usar `sandbox = On` durante las pruebas funcionales de worker y scheduler: el código inspeccionado impide que ambos procesen mientras ese modo esté activo. La política de sandbox de TEST debe ajustarse antes de esas pruebas, sin confundirla con el aislamiento de red y credenciales del entorno.
+
+Los comandos anteriores son los puntos de entrada identificados en el código; todavía no se han ejecutado satisfactoriamente porque falta `config.inc.php`. No se ha validado el comportamiento de los procesos contra una base de datos real.
+
+### Estado y límites
+
+No se generó `config.inc.php`, no se creó el generador, no se inició Compose ni contenedores OJS/MariaDB, no se modificaron directorios persistentes, no se publicaron imágenes y no se realizó ninguna operación en PROD. La preparación de los archivos `.env.example` y `deploy/README.md` pertenece al repositorio Gitea `encit/revista`, rama `feature/ojs-3.5-dockerfile`; no se copia esa implementación al repositorio de infraestructura.
+
+- [x] Confirmar que existen los scripts CLI de jobs y scheduler en la imagen.
+- [x] Identificar los modos `work` y `run` y sus funciones mediante inspección estática.
+- [x] Confirmar que el modo sandbox bloquea el worker y el scheduler.
+- [x] Identificar los ejecutores integrados `job_runner` y `task_runner`.
+- [ ] Generar y validar `config.inc.php` de TEST fuera de Git.
+- [ ] Ejecutar y validar worker/scheduler con configuración y base de datos funcionales.
+- [ ] Validar Compose y obtener autorización independiente antes de iniciar servicios.
