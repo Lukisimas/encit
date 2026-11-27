@@ -271,3 +271,34 @@ No se cambiaron propietarios, permisos, ACL ni contenidos. No se creó \`cache\`
 - [ ] Crear \`cache\` y preparar \`public\` desde la imagen OJS con autorización.
 - [ ] Generar \`config.inc.php\` de TEST sin guardar secretos en Git.
 - [ ] Validar Compose y, con autorización, iniciar primero MariaDB y después OJS.
+
+
+## 16. Contenido inicial de `public` y `cache` en la imagen OJS (27-nov-2026)
+
+Se inspeccionaron ambas rutas dentro de la imagen local `encit/revista:ojs-3.5.0-6-test` mediante contenedores temporales `--rm`; no se inició el servicio OJS ni se modificó el host.
+
+Resultado observado:
+
+| Ruta de imagen | Contenido | Propietario | Modo |
+|---|---|---|---:|
+| `/var/www/html/public` | `index.html` (0 bytes) | `www-data:www-data` (33:33) | archivo 0640; directorio 0750 |
+| `/var/www/html/cache` | `_db`, `t_cache`, `t_compile`, `t_config` | `www-data:www-data` (33:33) | directorios 0750 |
+| `/var/ojs-files` | directorio de archivos privados | `www-data:www-data` (33:33) | 0750 |
+
+La raíz `/var/www/html` tiene modo 1777 y propietario 33:33; esto no modifica los permisos requeridos para los volúmenes dedicados.
+
+En el host TEST, los directorios persistentes `public` y `files` existen vacíos, `cache` todavía no existe y `config` está vacío. Por tanto, antes de iniciar OJS:
+
+1. Copiar el contenido inicial de `/var/www/html/public` de la imagen al bind mount persistente `public`, preservando propietario numérico 33:33 y modos.
+2. Crear el directorio persistente `cache` con propietario 33:33 y modo 0750, y copiar sus subdirectorios iniciales desde la imagen, preservando modos y propietario.
+3. Mantener `files` con propietario 33:33 y modo 0750; no necesita sembrado desde `/var/ojs-files`, que es el punto de montaje de archivos privados.
+4. Mantener `mariadb` con UID/GID 999:999 y modo 0750.
+5. Generar `config.inc.php` por separado, sin incluir credenciales en Git ni en la documentación.
+
+La copia/creación anterior es un procedimiento propuesto, no una operación ya realizada. No se cambiaron permisos, propietarios ni contenidos; no se creó `cache`, no se generó `config.inc.php`, no se inició ningún contenedor OJS/MariaDB y no se modificó PROD.
+
+- [x] Inspeccionar contenido inicial y permisos de `public` y `cache` en la imagen.
+- [x] Confirmar UID/GID OJS `33:33` y modos `0750` de los directorios.
+- [ ] Sembrar `public` y `cache` en TEST, preservando propietario y modos, con autorización explícita.
+- [ ] Generar `config.inc.php` de TEST sin secretos en Git.
+- [ ] Validar Compose con los valores de entorno previstos antes de iniciar servicios.
