@@ -665,3 +665,27 @@ Se ejecutaron contenedores temporales en TEST, con red none, sin puertos publica
 - No se montaron directorios persistentes, no se cambiaron propietarios/permisos del host y no se modificó PROD.
 
 **Conclusión:** queda confirmado que los workers de Apache usan 33:33 y que MariaDB ejecuta el proceso principal con 999:999. Para los directorios web que Apache deba escribir se considera www-data 33:33; para el datadir MariaDB, mysql 999:999. La asignación concreta de permisos debe respetar el principio de mínimo privilegio y el mapeo final de volúmenes OJS; no hacer un chown recursivo general de todos los directorios.
+
+### Estructura lógica de OJS 3.5.0-6 y límites de escritura (27-nov-2026)
+
+Se revisó el código fuente oficial PKP en la etiqueta `3_5_0-6`, junto con la guía oficial de administración 3.5:
+
+- La raíz de la aplicación contiene `index.php`, `config.TEMPLATE.inc.php`, `cache/`, `public/`, `plugins/`, `lib/`, entre otros directorios.
+- En el árbol de esa etiqueta existen `cache/_db`, `cache/t_cache`, `cache/t_compile` y `cache/t_config`; `public/` incluye `index.html`.
+- `config.inc.php` se crea en la raíz de OJS a partir de `config.TEMPLATE.inc.php`.
+- El template configura `files_dir = files` como valor predeterminado y `public_files_dir = public`. La guía oficial de despliegue exige que `files_dir` quede fuera del web root para proteger manuscritos y archivos privados.
+- La guía oficial identifica el paquete estable OJS 3.5 y requiere PHP 8.2+, con extensiones mbstring, xml e intl; la imagen PHP 8.3 elegida satisface la versión base, pero falta verificar extensiones y requisitos del paquete descargable.
+- En OJS 3.5 el scheduler usa `lib/pkp/tools/scheduler.php`; sus registros se guardan bajo `<files_dir>/scheduledTaskLogs`.
+
+**Mapeo lógico previsto, sujeto a inspección del paquete descargable y prueba en TEST:**
+
+- Código OJS: dentro de la imagen, raíz de aplicación `/var/www/html`; no persistir el árbol completo como bind mount.
+- Configuración: archivo `config.inc.php` en la raíz de OJS, respaldado desde el directorio host `config`.
+- Caché: `/var/www/html/cache`, persistida desde el directorio host `cache`.
+- Archivos públicos: `/var/www/html/public`, persistidos desde el directorio host `public`.
+- Archivos privados: `files_dir` en una ruta fuera de `/var/www/html`, persistida desde el directorio host `files`.
+- MariaDB: datadir `/var/lib/mysql`, persistido desde el directorio host `mariadb`.
+
+**Precaución con bind mounts vacíos:** montar el directorio host `public` o `cache` encima de los directorios de la imagen oculta su contenido inicial. Antes de montar, se debe comprobar si el paquete trae archivos de protección o subdirectorios necesarios y sembrarlos en el volumen persistente. No aplicar todavía `chown` ni cambios de permisos en TEST o PROD.
+
+Fuentes oficiales consultadas: [OJS 3.5.0-6 source tree](https://github.com/pkp/ojs/tree/3_5_0-6), [configuration template](https://github.com/pkp/ojs/blob/3_5_0-6/config.TEMPLATE.inc.php), [PKP Admin Guide — Deployment](https://docs.pkp.sfu.ca/admin-guide/en/deploy), [PKP Admin Guide — Getting Started](https://docs.pkp.sfu.ca/admin-guide/en/getting-started), [Scheduled Tasks](https://docs.pkp.sfu.ca/admin-guide/en/deploy-scheduled-tasks).
