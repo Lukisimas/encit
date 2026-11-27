@@ -596,3 +596,24 @@ La revisión anterior confirma sintaxis y correspondencia estática con el templ
 - [ ] Ejecutar una prueba controlada del generador en TEST con autorización y validar el archivo sin revelar secretos.
 - [ ] Incorporar los artefactos `deploy/` al seguimiento Git y publicarlos en Gitea mediante el flujo autorizado.
 - [ ] Generar `config.inc.php` de TEST fuera de Git, sólo después de la prueba controlada y autorización expresa.
+
+
+## 25. Primera ejecución controlada del generador: directiva duplicada (27-nov-2026)
+
+El administrador ejecutó en el host TEST `pruebas` la prueba controlada de `deploy/scripts/generate-config.sh`, usando un directorio temporal y valores ficticios. La precondición reportó que la imagen local y los directorios de referencia estaban disponibles. La ejecución se detuvo con el error:
+
+```text
+ERROR: directiva duplicada: [general] time_zone.
+```
+
+La inspección posterior del template oficial incluido en `encit/revista:ojs-3.5.0-6-test` confirmó que `[general]` ya contiene la directiva activa `time_zone = "UTC"` (línea 63 del template observado). Por tanto, el generador no debe insertar una segunda directiva: debe actualizar la existente preservando el resto del template. La salida compartida no incluyó el fragmento del generador que realiza la sustitución; la corrección concreta queda pendiente de revisar ese bloque.
+
+**Resultado y alcance:** la prueba no fue satisfactoria. No se considera validado el generador y no se generó una configuración válida. El procedimiento de prueba utilizaba un directorio temporal con datos ficticios; no se reportó modificación de la configuración persistente TEST, inicio de OJS/MariaDB ni operación en PROD. La conexión SSH se cerró después del error.
+
+- [x] Confirmar disponibilidad de imagen y directorios de referencia para la prueba.
+- [x] Registrar el error de directiva duplicada en `[general] time_zone`.
+- [x] Confirmar que el template oficial ya contiene `time_zone = "UTC"`.
+- [ ] Revisar el bloque del generador que actualiza las directivas de `[general]`.
+- [ ] Corregir la actualización de `time_zone` sin duplicar la directiva.
+- [ ] Repetir la prueba controlada y validar todas las propiedades del archivo temporal.
+- [ ] Generar `config.inc.php` persistente de TEST sólo con autorización expresa posterior.
