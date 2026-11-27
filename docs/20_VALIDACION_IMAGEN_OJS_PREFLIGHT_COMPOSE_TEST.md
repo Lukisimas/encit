@@ -178,31 +178,37 @@ En una nueva inspección de sólo lectura del host `pruebas` se confirmó que ac
 
 La imagen local `encit/revista:ojs-3.5.0-6-test` sigue presente con ID `sha256:fc6c786114056dc70319c2a04f4a26389ab80f9b85613cbba1074b6a792146c5`, tamaño 297,988,323 bytes y fecha de creación `2026-11-27T14:04:08.741685589-06:00`.
 
-Este resultado difiere de la inspección anterior registrada en las secciones 4 y 7, donde se reportaron directorios persistentes existentes. Se conserva el resultado más reciente como estado observado; no se infiere si los directorios fueron eliminados, movidos o si la inspección anterior correspondía a otra ruta/momento. Antes de inicializar persistencia debe confirmarse la ruta definitiva y el montaje de almacenamiento previsto en la arquitectura del host.
+Este resultado difiere de la inspección anterior registrada en las secciones 4 y 7, donde se reportaron directorios persistentes existentes. Se conserva el resultado más reciente como estado observado; no se infiere si los directorios fueron eliminados, movidos o si la inspección anterior correspondía a otra ruta/momento. La aclaración de arquitectura y la decisión de ruta para TEST quedan registradas en la sección 13: TEST utiliza el disco único del servidor de control y no requiere un montaje independiente en `/data`.
 
 No se crearon directorios, no se cambiaron permisos, no se generó configuración, no se inició ningún contenedor y no se modificó PROD.
 
 - [x] Reinspeccionar la ruta de persistencia TEST y la presencia de contenedores.
-- [ ] Confirmar la ruta/montaje de almacenamiento TEST antes de crear directorios persistentes.
+- [x] Confirmar la ruta de persistencia TEST conforme a la arquitectura de disco único (véase sección 13).
 - [ ] Crear la estructura de persistencia TEST con propietarios y permisos verificados.
 - [ ] Sembrar `public` y preparar `cache` desde la imagen OJS.
 - [ ] Generar `config.inc.php` de TEST sin guardar secretos en Git.
 
 
-## 13. Verificación del montaje de almacenamiento TEST (27-nov-2026)
+## 13. Aclaración de almacenamiento y ruta de persistencia TEST (27-nov-2026)
 
-Tras una desconexión SSH durante la primera consulta, se reconectó al host y se repitió la inspección de sólo lectura. El resultado confirmado fue:
+Se corrige la interpretación de la inspección anterior: **TEST no tiene dos discos**. Desde el diseño inicial, el servidor de control que aloja DEV/TEST dispone de un solo disco. El esquema de dos arreglos (SSD RAID1 y HDD RAID5 montado en `/data`) corresponde exclusivamente al servidor de producción.
+
+La consulta de sólo lectura en `pruebas` confirmó:
 
 - Host: `pruebas`; usuario de sesión: `administrador`.
-- `/data` no existe en el sistema de archivos (`df: /data: No such file or directory`).
-- `/srv/encit` no es un punto de montaje independiente: `findmnt` reporta como destino `/`, dispositivo `/dev/sda1`, sistema `ext4`.
-- El sistema de archivos raíz tiene 901 GB, 14 GB usados y 842 GB disponibles en el momento de la consulta.
+- `/data` no existe, lo cual es esperado en este servidor y no constituye una anomalía.
+- `/srv/encit` reside en el filesystem raíz: `/dev/sda1`, ext4.
+- El filesystem raíz reportó 901 GB totales, 14 GB usados y 842 GB disponibles en el momento de la consulta.
 
-**Conclusión operativa:** no se ha identificado ni montado en TEST el volumen dedicado previsto bajo `/data`. El espacio libre de la raíz no demuestra que sea correcto alojar ahí los datos persistentes de OJS. Se mantiene bloqueada la creación de `mariadb`, `config`, `files`, `public` y `cache`, así como la generación de `config.inc.php`, hasta confirmar el dispositivo/volumen de datos, su punto de montaje definitivo y la ruta aprobada para TEST.
+**Decisión de persistencia TEST:** utilizar `/srv/encit/data/revista/test`, consistente con `repos/revista/deploy/testing/.env.example`. Los directorios de MariaDB, configuración, archivos privados, `public` y `cache` se alojarán bajo esa raíz en el único disco disponible. No se debe crear ni esperar un montaje adicional en `/data` para TEST.
 
-La desconexión SSH no produjo cambios conocidos; la consulta posterior fue de sólo lectura. No se crearon directorios, no se modificaron propietarios/permisos, no se inició ningún contenedor y no se tocó PROD.
+Esta decisión elimina el bloqueo documental relacionado con la ausencia de `/data`; no significa que la persistencia ya exista o esté inicializada. La inspección anterior encontró que `/srv/encit/data/revista/test` no existía. Por tanto, siguen pendientes la creación de la estructura, la asignación de propietarios/permisos verificados, la siembra de `public` y `cache`, y la generación segura de `config.inc.php`.
 
-- [x] Confirmar que `/data` no existe en TEST.
+La desconexión SSH durante la primera consulta no produjo cambios conocidos; la consulta posterior fue de sólo lectura. No se crearon directorios, no se modificaron propietarios/permisos, no se inició ningún contenedor y no se tocó PROD.
+
+- [x] Confirmar que TEST utiliza un solo disco y no requiere `/data`.
 - [x] Confirmar que `/srv/encit` reside en el filesystem raíz `/dev/sda1`.
-- [ ] Identificar y montar el volumen de datos TEST conforme al diseño aprobado.
-- [ ] Revalidar el punto de montaje y la ruta definitiva antes de preparar persistencia OJS.
+- [x] Definir `/srv/encit/data/revista/test` como raíz de persistencia TEST.
+- [ ] Crear la estructura persistente TEST con propietarios y permisos verificados.
+- [ ] Sembrar `public` y preparar `cache` desde la imagen OJS.
+- [ ] Generar `config.inc.php` de TEST sin guardar secretos en Git.
