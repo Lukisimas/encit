@@ -616,3 +616,20 @@ Prueba temporal en TEST, sin red, puertos publicados ni volúmenes del host:
 - Los contenedores temporales fueron configurados para eliminarse al finalizar. No se tocaron los directorios persistentes ni permisos de PROD.
 
 Quedan confirmados los UID/GID efectivos de escritura: workers Apache 33:33 y proceso MariaDB 999:999. Aplicar permisos sólo a los directorios que correspondan a cada montaje y después de validar el mapeo definitivo de OJS.
+
+## Estructura de OJS 3.5 y mapeo previsto de persistencia (27-nov-2026)
+
+Revisión del tag oficial PKP `3_5_0-6` y de la guía de administración 3.5:
+
+- Raíz de OJS: `index.php`, `config.TEMPLATE.inc.php`, `cache/`, `public/`, `plugins/`, `lib/`.
+- Caché: subdirectorios `_db`, `t_cache`, `t_compile`, `t_config`.
+- Público: `public/index.html` existe en el árbol fuente.
+- Configuración efectiva: `config.inc.php` en la raíz de la aplicación.
+- Configuración predeterminada: `files_dir = files` y `public_files_dir = public`; la guía de despliegue exige que files_dir esté fuera del web root.
+- Scheduler 3.5: `php lib/pkp/tools/scheduler.php run`; logs en `<files_dir>/scheduledTaskLogs`.
+
+Mapeo previsto para validar, no desplegado: config host → archivo config.inc.php en raíz OJS; cache host → /var/www/html/cache; public host → /var/www/html/public; files host → ruta externa a /var/www/html; MariaDB host → /var/lib/mysql. El código permanecerá dentro de la imagen, sin bind mount del árbol completo.
+
+**Riesgo de bind mounts vacíos:** un bind mount sobre public o cache oculta los archivos que trae la imagen. Inspeccionar el paquete descargable y sembrar archivos/subdirectorios requeridos antes de montar. No se cambiaron permisos ni se crearon contenedores OJS/MariaDB en esta etapa.
+
+Fuentes: repositorio oficial PKP etiqueta 3_5_0-6 y Admin Guide 3.5 (Deployment, Getting Started, Scheduled Tasks).
