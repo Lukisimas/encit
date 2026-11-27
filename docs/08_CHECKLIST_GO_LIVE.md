@@ -279,3 +279,15 @@ Esta etapa fue de revisión de fuentes; no se descargó ni ejecutó OJS, no se c
 - [ ] Cotejar SHA-256 con checksum oficial PKP si está publicado.
 
 No se extrajo el paquete en directorios persistentes ni se modificaron permisos.
+
+ 
+### Requisitos de PHP de Revista Xitle (27-nov-2026)
+
+- [x] Verificar PHP 8.3.37 en la imagen base `php:8.3-apache-bookworm`.
+- [x] Registrar extensiones ausentes: `bcmath`, `ftp`, `gd`, `intl`, `zip`, `pdo_mysql` y `mysqli`.
+- [x] Confirmar que las extensiones restantes de la lista verificada están disponibles.
+- [ ] Incorporar Dockerfile propio y reproducible para OJS con las extensiones requeridas.
+- [ ] Verificar `composer check-platform-reqs` y módulos PHP CLI/Apache.
+- [ ] Validar instalación de OJS en TEST antes de cualquier promoción.
+
+No se modificaron imágenes persistentes ni servidores; la prueba se ejecutó en contenedores efímeros.
