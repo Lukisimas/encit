@@ -247,3 +247,27 @@ La estructura observada contiene `files`, `public`, `config` y `mariadb`; no se 
 - [ ] Determinar el acceso administrativo mínimo sin abrir innecesariamente la ruta.
 - [ ] Confirmar si existe `config.inc.php` y si MariaDB contiene datos antes de cualquier inicialización.
 - [ ] Preparar cualquier cambio de permisos/propiedad para autorización explícita.
+
+## 15. Verificación de contenido de persistencia TEST (27-nov-2026)
+
+Se amplió la inspección de sólo lectura para determinar si las carpetas existentes contienen datos previos:
+
+- \`/srv/encit/data/revista/test\` contiene únicamente los directorios \`config\`, \`files\`, \`public\` y \`mariadb\`; no se encontraron archivos en los niveles inspeccionados.
+- \`config.inc.php\` no existe dentro de \`config\`.
+- El directorio \`cache\` no existe.
+- \`mariadb\` ocupa 4.0 KiB y no contiene entradas en los niveles inspeccionados; se considera sin inicialización visible, pero no se ejecutó ninguna prueba de arranque.
+- \`files\`, \`public\` y \`config\` ocupan 4.0 KiB cada uno y no contienen archivos observados.
+- Los propietarios numéricos siguen siendo \`33:33\` para \`config\`, \`files\` y \`public\`, y \`999:999\` para \`mariadb\`. El directorio raíz \`test\` permanece \`root:root\` con modo \`0750\`; su padre \`revista\` también es \`root:root\` \`0750\`.
+- \`administrador\` es UID/GID \`1000:1000\` y no tiene permiso de recorrido directo a través de \`revista\` sin privilegios elevados. No se instalaron herramientas ACL, ni se consultaron ACL extendidas.
+
+**Conclusión:** las carpetas de persistencia observadas están vacías a nivel de contenido visible y no hay configuración OJS creada ni datos de MariaDB visibles. La estructura todavía no está lista para iniciar servicios: falta crear \`cache\`, generar \`config.inc.php\` de TEST y resolver el acceso administrativo de forma mínima. Antes de sembrar \`public\` desde la imagen, debe definirse y ejecutar explícitamente el procedimiento de copia preservando \`www-data:33:33\` y sin ocultar los archivos originales de la imagen con un bind mount vacío.
+
+No se cambiaron propietarios, permisos, ACL ni contenidos. No se creó \`cache\`, no se generó configuración, no se inició ningún contenedor y no se modificó PROD.
+
+- [x] Inspeccionar contenido de \`config\`, \`files\`, \`public\` y \`mariadb\`.
+- [x] Confirmar ausencia de \`config.inc.php\` y \`cache\`.
+- [x] Registrar propietarios numéricos y tamaños observados.
+- [ ] Definir acceso administrativo mínimo a la ruta sin ampliar permisos innecesariamente.
+- [ ] Crear \`cache\` y preparar \`public\` desde la imagen OJS con autorización.
+- [ ] Generar \`config.inc.php\` de TEST sin guardar secretos en Git.
+- [ ] Validar Compose y, con autorización, iniciar primero MariaDB y después OJS.
