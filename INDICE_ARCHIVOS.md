@@ -1,6 +1,6 @@
 # Índice de archivos
 
-Total: **192 archivos**.
+Total: **193 archivos**.
 
 ## Estructura
 
@@ -27,6 +27,11 @@ docs/12_VALIDACION_PAQUETE.md
 docs/13_ALMACENAMIENTO_PRODUCCION.md
 docs/14_CERTBOT_XITLE_BOOTSTRAP.md
 docs/15_VALIDACION_PUBLICA_XITLE.md
+docs/16_VALIDACION_DOCKER_DEVTEST.md
+docs/17_IMPLEMENTACION_PLATAFORMA_CONTROL.md
+docs/18_DISENO_CICD_XITLE_OJS.md
+docs/19_DISENO_TECNICO_REVISTA_XITLE_OJS.md
+docs/20_VALIDACION_IMAGEN_OJS_PREFLIGHT_COMPOSE_TEST.md
 repos/cursos/Dockerfile
 repos/cursos/README.md
 repos/cursos/astro.config.mjs
