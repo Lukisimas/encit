@@ -250,3 +250,18 @@ Las inspecciones de identidad se realizaron en shells temporales, sin volúmenes
 - [ ] Repetir validación de lectura/escritura con los volúmenes montados antes de modificar permisos en PROD.
 
 La prueba confirma las identidades efectivas de los procesos; no equivale todavía a una prueba de escritura sobre los directorios persistentes.
+
+### Inspección de estructura OJS 3.5.0-6 (27-nov-2026)
+
+- [x] Revisar el árbol oficial PKP en etiqueta 3_5_0-6: raíz de aplicación, cache, public, plugins y lib.
+- [x] Confirmar en el árbol fuente cache/_db, cache/t_cache, cache/t_compile, cache/t_config y public/index.html.
+- [x] Confirmar en config.TEMPLATE.inc.php los valores predeterminados files_dir=files y public_files_dir=public.
+- [x] Confirmar en la guía PKP que files_dir debe quedar fuera del web root.
+- [x] Identificar el scheduler de OJS 3.5 en lib/pkp/tools/scheduler.php y sus logs dentro de files_dir.
+- [ ] Descargar e inspeccionar en TEST el paquete oficial 3.5.0-6 antes de preparar los bind mounts.
+- [ ] Sembrar public/cache persistentes desde el paquete si el montaje vacío ocultaría contenido requerido.
+- [ ] Verificar extensiones PHP requeridas por el paquete exacto (incluidas mbstring, xml e intl).
+- [ ] Validar escritura de public, cache y files en TEST con www-data 33:33; validar datadir MariaDB con mysql 999:999.
+- [ ] Mantener PROD sin cambios hasta completar pruebas de lectura/escritura y seguridad.
+
+Esta etapa fue de revisión de fuentes; no se descargó ni ejecutó OJS, no se crearon directorios y no se modificaron permisos.
