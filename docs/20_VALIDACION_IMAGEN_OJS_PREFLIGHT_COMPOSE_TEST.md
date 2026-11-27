@@ -156,4 +156,17 @@ Se volvieron a consultar los manifiestos directamente en la rama del PR. Se conf
 - [x] Confirmar rama, estado y commit del checkout Gitea en TEST.
 - [x] Confirmar ausencia de manifiestos de despliegue en el checkout Gitea.
 - [x] Reconsultar Compose TEST/PROD y `.env.example` en la rama del PR.
-- [ ] Ejecutar `docker compose config --quiet` sobre el manifiesto versionado de TEST con variables sintéticas de validación.
+- [x] Ejecutar la validación estática de sintaxis del Compose TEST con resultado correcto.
+
+
+## 11. Resultado de validación estática de Compose TEST (27-nov-2026)
+
+Se ejecutó en el host `pruebas` la validación estática del manifiesto Compose TEST, utilizando los archivos preparados para la comprobación.
+
+**Resultado reportado:** `Compose TEST válido sintácticamente`.
+
+Esta comprobación confirma únicamente que el manifiesto supera la validación sintáctica realizada. No acredita la disponibilidad de las imágenes en un Registry, la resolución efectiva de variables/secretos de un entorno real, la creación de redes o volúmenes, la conectividad con MariaDB, ni el funcionamiento de OJS detrás del proxy.
+
+La validación no inició contenedores ni modificó la persistencia. No se ejecutó ninguna acción en PROD.
+
+**Siguientes pasos pendientes:** preparar e inicializar los directorios persistentes de TEST, generar la configuración OJS de TEST sin exponer secretos y, con autorización antes de iniciar servicios, validar primero MariaDB y después OJS y el proxy. La descarga del digest MariaDB desde PROD continúa pendiente y requiere autorización específica antes de acceder a ese host.
