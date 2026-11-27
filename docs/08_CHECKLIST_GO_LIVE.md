@@ -265,3 +265,17 @@ La prueba confirma las identidades efectivas de los procesos; no equivale todav�
 - [ ] Mantener PROD sin cambios hasta completar pruebas de lectura/escritura y seguridad.
 
 Esta etapa fue de revisión de fuentes; no se descargó ni ejecutó OJS, no se crearon directorios y no se modificaron permisos.
+
+### Inspección del tarball oficial OJS 3.5.0-6 (27-nov-2026)
+
+- [x] Descargar paquete oficial y validar que el tarball se puede leer completo.
+- [x] Registrar SHA-256 observado: f5b85703b06e45cc82e56ef72b0a8f42a2f75237e5204dbd0146d9730a627c97 (pendiente cotejo contra checksum oficial).
+- [x] Confirmar presencia de config.inc.php y config.TEMPLATE.inc.php; inspeccionar config.inc.php antes de utilizarlo.
+- [x] Identificar cache/_db, cache/t_cache, cache/t_compile, cache/t_config y public/index.html (0 bytes).
+- [x] Identificar requisitos PHP del README: PHP 8.2+, bcmath, curl, dom, fileinfo, ftp, gd, intl, openssl, simplexml, xml, xmlwriter y zip; mbstring se presenta como polyfill en la salida de Composer.
+- [ ] Inspeccionar config.inc.php del tarball sin revelar ni registrar secretos.
+- [ ] Comparar los requisitos con php -m y Composer check-platform-reqs de la imagen PHP.
+- [ ] Inicializar cache y public persistentes con la estructura requerida antes de bind mounts.
+- [ ] Cotejar SHA-256 con checksum oficial PKP si está publicado.
+
+No se extrajo el paquete en directorios persistentes ni se modificaron permisos.
