@@ -61,11 +61,11 @@ La revisión de `repos/revista/deploy/testing/docker-compose.yml` encontró:
 
 1. **Ruta de archivos privados incorrecta:** el Compose monta `OJS_FILES_DIR` en `/var/www/ojs-files`, pero la imagen y el diseño de OJS utilizan `/var/ojs-files`. El destino debe corregirse antes de ejecutar Compose.
 2. **Red edge excesiva:** `worker` y `scheduler` aparecen conectados a `encit_control_edge`. Deben conectarse sólo a `ojs_internal`; únicamente `web` necesita el alias `revista-test-web` en edge.
-3. **Imagen MariaDB no fijada:** `mariadb:11.8` es una etiqueta flotante. La imagen exacta y su digest deben verificarse en TEST antes de fijar la referencia de Compose.
+3. **Imagen MariaDB:** el tag solicitado `mariadb:11.8.10` no está publicado en Docker Hub (respuesta `not found`). Se verificó en TEST la imagen `mariadb:11.8.9`, versión `11.8.9-MariaDB-ubu2404`, arquitectura `linux/amd64`, ID y RepoDigest `sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc`. Se fija esa referencia por digest en Compose TEST y PROD para evitar el tag flotante `mariadb:11.8`. La disponibilidad de descarga de ese digest desde PROD queda pendiente de validación antes de cualquier despliegue.
 4. **Etiqueta OJS obsoleta en el ejemplo de entorno:** `IMAGE_TAG` contiene un marcador de OJS 3.5.0-5, mientras que la imagen construida y validada localmente corresponde a OJS 3.5.0-6. No sustituir el marcador por una etiqueta de Registry hasta que se publique y valide una imagen remota.
 5. **Precondiciones pendientes:** `config.inc.php` todavía no existe en el almacenamiento TEST y el directorio de caché no está creado. No iniciar el stack con el archivo de configuración ausente ni con los bind mounts sin inicializar.
 
-El Compose de producción comparte el destino incorrecto `/var/www/ojs-files`; debe corregirse en el repositorio antes de considerar ese manifiesto como candidato, aunque no se ejecutará ni validará contra PROD durante esta fase.
+El Compose de producción comparte el destino incorrecto `/var/www/ojs-files`; se corrige a `/var/ojs-files`, que es la ruta privada preparada por la imagen OJS. El manifiesto PROD se modifica únicamente en GitHub; no se ejecuta ni se valida contra el host PROD durante esta fase.
 
 ## 6. Estado operativo
 
@@ -74,9 +74,10 @@ El Compose de producción comparte el destino incorrecto `/var/www/ojs-files`; d
 - [x] Inspeccionar rutas y contenido inicial de la imagen.
 - [x] Inspeccionar red, montajes y dirección del proxy compartido.
 - [x] Revisar Compose TEST/PROD y ejemplo de entorno versionados.
-- [ ] Confirmar imagen MariaDB local, versión exacta, digest y UID/GID efectivo.
-- [ ] Corregir y validar estáticamente Compose TEST.
-- [ ] Corregir el destino de `files_dir` en Compose PROD sin ejecutarlo.
+- [x] Confirmar imagen MariaDB local, versión exacta, digest, arquitectura y UID/GID efectivo.
+- [x] Fijar MariaDB 11.8.9 por digest en Compose TEST y PROD.
+- [x] Corregir estáticamente ruta de archivos y aislamiento de red en Compose TEST.
+- [x] Corregir el destino de `files_dir` en Compose PROD sin ejecutarlo.
 - [ ] Crear/sembrar los directorios persistentes TEST después de validar las imágenes y permisos.
 - [ ] Generar configuración TEST sin guardar secretos en Git.
 - [ ] Ejecutar primero MariaDB y validar healthcheck/persistencia.
@@ -108,7 +109,7 @@ La inspección de almacenamiento confirmó:
 | `public` | `33:33` | `0750` | Existe, vacío |
 | `cache` | — | — | No existe |
 
-La imagen MariaDB está disponible localmente y su digest permite fijar una referencia inmutable para TEST. Antes de editar el manifiesto se debe confirmar que se desea usar exactamente esta build local; no se debe inferir que ese digest ya fue publicado o validado en Registry.
+La imagen MariaDB está disponible localmente y su RepoDigest permite fijar una referencia inmutable. Se decidió usar la versión 11.8.9 porque el tag 11.8.10 no está publicado. El mismo digest queda especificado en Compose TEST y PROD para mantener una versión idéntica; falta validar su descarga desde PROD antes de cualquier despliegue.
 
 ## 8. Resultado actualizado y siguientes precondiciones
 
@@ -116,9 +117,21 @@ La imagen MariaDB está disponible localmente y su digest permite fijar una refe
 - [x] Confirmar UID/GID MariaDB `999:999`.
 - [x] Confirmar que el directorio de datos MariaDB ya coincide numéricamente con `999:999`.
 - [x] Confirmar que `cache` no existe.
-- [ ] Decidir y fijar la referencia por digest de MariaDB en Compose TEST; PROD requiere una decisión de promoción separada.
+- [x] Decidir y fijar la referencia por digest de MariaDB 11.8.9 en Compose TEST y PROD; la descarga desde PROD sigue pendiente de validación.
 - [ ] Corregir el destino de `files_dir` y el aislamiento de redes en Compose.
 - [ ] Crear `cache` con propietario `33:33` y modo mínimo después de validar el procedimiento.
 - [ ] Inicializar `public` desde la imagen OJS antes de montar el bind mount vacío.
 - [ ] Generar y revisar la configuración TEST de forma segura, sin registrar secretos.
 - [ ] Validar Compose estáticamente antes de iniciar contenedores.
+
+
+## 9. Decisión y cambios de Compose (27-nov-2026)
+
+- El intento de descargar `mariadb:11.8.10` falló con `manifest not found`; no se presume que exista esa versión/tag.
+- Se adopta `mariadb:11.8.9-MariaDB-ubu2404`, `linux/amd64`, RepoDigest `mariadb@sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc`.
+- Compose TEST y PROD fijan la imagen como `mariadb:11.8.9@sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc`.
+- Ambos Compose montan `OJS_FILES_DIR` en `/var/ojs-files`, fuera del DocumentRoot.
+- En TEST, sólo `web` se conecta a `encit_control_edge`; `db`, `worker` y `scheduler` permanecen en `ojs_internal`.
+- En PROD se conserva el aislamiento ya definido: sólo `web` se conecta a `encit_prod_edge`; `db`, `worker` y `scheduler` permanecen en `ojs_internal`.
+- Estos cambios son manifiestos versionados. No se ejecutó Compose, no se descargó la imagen en PROD y no se inició ningún contenedor OJS/MariaDB.
+- Pendiente: validar que PROD pueda descargar la referencia exacta por digest antes de aprobar un despliegue.
