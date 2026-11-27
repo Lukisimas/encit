@@ -333,3 +333,69 @@ No se ejecutó Compose, no se inició ningún contenedor, no se creó `cache` ni
 - [ ] Crear/sembrar `cache` y `public` con propietarios y modos correctos.
 - [ ] Generar `config.inc.php` de TEST fuera de Git.
 - [ ] Sustituir el marcador de `IMAGE_TAG` por una referencia publicada y validada antes de desplegar.
+
+
+## 18. Autorización para ACL de recorrido en TEST y estado de ejecución (27-nov-2026)
+
+El administrador autorizó aplicar en el host TEST `pruebas` un ajuste mínimo para que los procesos OJS (UID 33) y MariaDB (UID 999) puedan atravesar los directorios padre `/srv/encit/data/revista` y `/srv/encit/data/revista/test`, sin conceder permiso de listado ni modificar propietarios.
+
+**Procedimiento autorizado, pendiente de ejecución y verificación en el host:**
+
+1. Instalar el paquete Debian `acl`.
+2. Aplicar ACL nominativas de sólo búsqueda/recorrido a ambos UID en ambos directorios:
+   `setfacl -m u:33:--x,u:999:--x /srv/encit/data/revista /srv/encit/data/revista/test`.
+3. Consultar las ACL efectivas con `getfacl -p` y comprobar recorrido como UID 33 y UID 999 con pruebas `test -x` sobre la ruta completa.
+4. Confirmar que los permisos tradicionales y propietarios no fueron alterados y que los UID no pueden listar el contenido de los directorios padre.
+
+**Limitación de ejecución en esta sesión:** no hay una conexión de terminal/SSH disponible para administrar el host. Por tanto, el paquete no se ha instalado, las ACL no se han aplicado y no se puede reportar una validación efectiva. La autorización del administrador queda registrada, pero no equivale a ejecución. No se modificó TEST ni PROD.
+
+Bloque propuesto para ejecutar directamente en `pruebas`:
+
+```bash
+set -euo pipefail
+
+sudo apt-get update
+sudo apt-get install -y acl
+
+sudo setfacl -m u:33:--x,u:999:--x \
+  /srv/encit/data/revista \
+  /srv/encit/data/revista/test
+
+echo "========== ACL =========="
+sudo getfacl -p \
+  /srv/encit/data/revista \
+  /srv/encit/data/revista/test
+
+echo "========== RECORRIDO OJS (UID 33) =========="
+sudo setpriv --reuid=33 --regid=33 --clear-groups \
+  sh -c 'test -x /srv/encit/data/revista && test -x /srv/encit/data/revista/test && echo OK'
+
+echo "========== RECORRIDO MARIADB (UID 999) =========="
+sudo setpriv --reuid=999 --regid=999 --clear-groups \
+  sh -c 'test -x /srv/encit/data/revista && test -x /srv/encit/data/revista/test && echo OK'
+
+echo "========== LISTADO DENEGADO =========="
+if sudo setpriv --reuid=33 --regid=33 --clear-groups \
+  sh -c 'ls /srv/encit/data/revista >/dev/null 2>&1'; then
+  echo "ERROR: UID 33 puede listar revista"
+  exit 1
+else
+  echo "OK: UID 33 no puede listar revista"
+fi
+
+if sudo setpriv --reuid=999 --regid=999 --clear-groups \
+  sh -c 'ls /srv/encit/data/revista/test >/dev/null 2>&1'; then
+  echo "ERROR: UID 999 puede listar test"
+  exit 1
+else
+  echo "OK: UID 999 no puede listar test"
+fi
+```
+
+Nota: la prueba de listado denegado valida que la ACL `--x` no haya otorgado lectura. Si una ACL previa o un permiso adicional permite listar, detenerse y revisar antes de continuar; no ampliar ni sustituir permisos automáticamente.
+
+- [x] Obtener autorización explícita para instalar `acl` y aplicar ACL mínimas en TEST.
+- [ ] Instalar `acl` en TEST.
+- [ ] Aplicar ACL nominativas de sólo recorrido a UID 33 y 999.
+- [ ] Verificar ACL, recorrido y ausencia de permiso de listado.
+- [ ] Registrar resultado real de ejecución en esta sección antes de preparar la siembra de `public` y `cache`.
