@@ -2,13 +2,13 @@ name: encit-revista-prod
 
 x-ojs-volumes: &ojs-volumes
   - ${OJS_CONFIG_DIR}/config.inc.php:/var/www/html/config.inc.php
-  - ${OJS_FILES_DIR}:/var/www/ojs-files
+  - ${OJS_FILES_DIR}:/var/ojs-files
   - ${OJS_PUBLIC_DIR}:/var/www/html/public
   - ${OJS_CACHE_DIR}:/var/www/html/cache
 
 services:
   db:
-    image: mariadb:11.8
+    image: mariadb:11.8.9@sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc
     restart: unless-stopped
     environment:
       MARIADB_DATABASE: ${MARIADB_DATABASE}
