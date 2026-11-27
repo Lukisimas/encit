@@ -565,18 +565,34 @@ El administrador aprobó que el generador se niegue a sobrescribir un `config.in
 5. Genere secretos independientes sin mostrarlos.
 6. Cree el archivo de forma exclusiva y atómica, usando un temporal en el mismo directorio y sin reemplazar un destino existente.
 
+### Implementación y revisión estática del generador (27-nov-2026)
+
+El administrador implementó en el checkout local de Gitea `encit/revista`, rama `feature/ojs-3.5-dockerfile`, el archivo `deploy/scripts/generate-config.sh`. La salida de Git continúa mostrando `?? deploy/`: el directorio y sus archivos todavía no están seguidos por Git y no se ha confirmado commit ni push en Gitea.
+
+Se revisó el contenido completo del script y se ejecutaron las siguientes validaciones, con resultados reportados por el administrador:
+
+- `bash -n deploy/scripts/generate-config.sh`: correcto.
+- Extracción del bloque Python incrustado y `python3 -m py_compile`: correcto.
+- La referencia de imagen `encit/revista:ojs-3.5.0-6-test` queda admitida por la expresión regular de `IMAGE`.
+- La ruta del host `OJS_FILES_DIR` se valida como directorio existente, pero la configuración de OJS utiliza la ruta interna `/var/ojs-files`, que es el destino previsto del volumen Docker.
+- `OJS_PUBLIC_DIR` se valida como directorio existente y `public_files_dir` conserva el valor relativo `public`.
+- El script exige ejecución como root, comprueba que `config.inc.php` no exista, crea un temporal en el mismo directorio, aplica propietario numérico `33:33` y modo `0640`, y publica con `os.link` para no reemplazar un destino existente.
+- Se comprobó que el template de la imagen contiene las directivas requeridas, incluidas las líneas SMTP comentadas que el script activa y configura.
+- Los directorios `files`, `public` y `config` de TEST se observaron con propietario `33:33` y modo `0750`. Las ACL de los directorios padre restringen el acceso de otros usuarios; el usuario de sesión `administrador` no puede inspeccionar directamente la ruta sin privilegios.
+
+El generador configura SMTP sin autenticación, acorde con Mailpit en TEST (`mailpit:1025`). Aunque el ejemplo de entorno contiene `SMTP_USER` y `SMTP_PASSWORD`, el script no utiliza esas variables; deben permanecer vacías para esta configuración. La autenticación SMTP no está implementada por este generador.
+
 ### Estado y límites
 
-La rama Gitea observada es `feature/ojs-3.5-dockerfile`, HEAD local `c8ffebc` (`Build hardened OJS 3.5.0-6 Docker image`). El estado Git reportado es `?? deploy/`; `deploy/README.md` y los ejemplos de entorno están en un directorio todavía no seguido por Git. El directorio `deploy/scripts` existe y está vacío. El ejemplo TEST ya refleja `OJS_SANDBOX=Off` según la salida compartida por el administrador.
-
-La inspección confirmó que `app_key` está vacío en el template, `salt` conserva el marcador de ejemplo y `api_key_secret` está vacío. También confirmó que el template inicia con `installed = Off`, `sandbox = Off`, `job_runner = On` y `task_runner = On`; el generador deberá aplicar los valores acordados para TEST, incluidos los ejecutores integrados desactivados y `process_jobs_at_task_scheduler = Off`.
-
-**No se ha creado todavía `generate-config.sh`, no se ha generado `config.inc.php`, no se han iniciado servicios ni contenedores y no se ha modificado PROD.** La siguiente etapa es implementar y revisar el script en Gitea; después se documentarán sus pruebas de sintaxis y validación en esta rama del PR, sin afirmar ejecución hasta recibir sus resultados.
+La revisión anterior confirma sintaxis y correspondencia estática con el template, pero **no equivale a una prueba de ejecución del generador**. No se ha ejecutado `generate-config.sh`, no se ha creado `config.inc.php`, no se han generado secretos, no se ha iniciado Compose ni contenedores OJS/MariaDB, no se han modificado ACL o permisos y no se ha realizado ninguna operación en PROD.
 
 - [x] Inspeccionar el generador oficial de `app_key` y confirmar el cifrado predeterminado.
 - [x] Identificar el uso de `salt` en HMAC para recuperación de contraseñas.
 - [x] Identificar el uso de `api_key_secret` para JWT HS256.
 - [x] Aprobar la política de no sobrescritura de `config.inc.php`.
-- [ ] Implementar `deploy/scripts/generate-config.sh` en Gitea.
-- [ ] Revisar sintaxis, guardas, preservación del template y escritura atómica.
-- [ ] Ejecutar el generador en TEST con autorización y validar el archivo sin revelar secretos.
+- [x] Implementar `deploy/scripts/generate-config.sh` en el árbol de trabajo local de Gitea (sin commit/push).
+- [x] Validar sintaxis Bash y Python del script.
+- [x] Revisar estáticamente las guardas, directivas del template, rutas y escritura exclusiva.
+- [ ] Ejecutar una prueba controlada del generador en TEST con autorización y validar el archivo sin revelar secretos.
+- [ ] Incorporar los artefactos `deploy/` al seguimiento Git y publicarlos en Gitea mediante el flujo autorizado.
+- [ ] Generar `config.inc.php` de TEST fuera de Git, sólo después de la prueba controlada y autorización expresa.
