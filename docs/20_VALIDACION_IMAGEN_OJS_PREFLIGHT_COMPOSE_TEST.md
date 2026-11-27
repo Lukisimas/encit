@@ -135,3 +135,25 @@ La imagen MariaDB está disponible localmente y su RepoDigest permite fijar una 
 - En PROD se conserva el aislamiento ya definido: sólo `web` se conecta a `encit_prod_edge`; `db`, `worker` y `scheduler` permanecen en `ojs_internal`.
 - Estos cambios son manifiestos versionados. No se ejecutó Compose, no se descargó la imagen en PROD y no se inició ningún contenedor OJS/MariaDB.
 - Pendiente: validar que PROD pueda descargar la referencia exacta por digest antes de aprobar un despliegue.
+
+
+## 10. Comprobación de disponibilidad de manifiestos en TEST (27-nov-2026)
+
+Se verificó en el host `pruebas` el repositorio local `/srv/encit/apps/revista/dev`:
+
+- Rama: `feature/ojs-3.5-dockerfile`.
+- Estado Git: limpio (`## feature/ojs-3.5-dockerfile`).
+- HEAD: `c8ffebc Build hardened OJS 3.5.0-6 Docker image`.
+- Docker Engine: `29.7.2`, build `a7dcaa6`.
+- Docker Compose: `v5.5.0`.
+
+No existen en ese checkout los archivos `deploy/testing/docker-compose.yml`, `deploy/testing/.env`, `deploy/testing/.env.example` ni `deploy/production/docker-compose.yml`. Esto es consistente con la separación de repositorios: el checkout Gitea `encit/revista` contiene el artefacto de aplicación OJS; los manifiestos de despliegue pertenecen al repositorio GitHub `Lukisimas/encit`, rama `docs/storage-xitle-hostnames`, PR #1.
+
+Se volvieron a consultar los manifiestos directamente en la rama del PR. Se confirmó que TEST y PROD mantienen los destinos de volumen `/var/ojs-files`, la referencia MariaDB fijada por digest y el aislamiento de red documentado en la sección 9. El ejemplo de entorno TEST conserva `IMAGE_TAG=3.5.0-5-REPLACE_WITH_TESTED_TAG`; es un marcador pendiente y no debe usarse como etiqueta de despliegue.
+
+**Resultado:** todavía no se ejecutó `docker compose config`. No se copiarán manifiestos a Gitea ni se crearán archivos en TEST hasta definir un procedimiento de validación que use exactamente los archivos versionados del PR y valores de entorno de prueba no secretos. No se inició ningún contenedor ni se modificó persistencia o PROD.
+
+- [x] Confirmar rama, estado y commit del checkout Gitea en TEST.
+- [x] Confirmar ausencia de manifiestos de despliegue en el checkout Gitea.
+- [x] Reconsultar Compose TEST/PROD y `.env.example` en la rama del PR.
+- [ ] Ejecutar `docker compose config --quiet` sobre el manifiesto versionado de TEST con variables sintéticas de validación.
