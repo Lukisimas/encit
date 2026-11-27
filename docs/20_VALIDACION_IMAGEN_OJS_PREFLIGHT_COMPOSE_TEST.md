@@ -198,7 +198,6 @@ La consulta de sólo lectura en `pruebas` confirmó:
 - `/data` no existe, lo cual es esperado en este servidor y no constituye una anomalía.
 - `/srv/encit` reside en el filesystem raíz: `/dev/sda1`, ext4.
 - El filesystem raíz reportó 901 GB totales, 14 GB usados y 842 GB disponibles en el momento de la consulta.
-
 **Decisión de persistencia TEST:** utilizar `/srv/encit/data/revista/test`, consistente con `repos/revista/deploy/testing/.env.example`. Los directorios de MariaDB, configuración, archivos privados, `public` y `cache` se alojarán bajo esa raíz en el único disco disponible. No se debe crear ni esperar un montaje adicional en `/data` para TEST.
 
 Esta decisión elimina el bloqueo documental relacionado con la ausencia de `/data`. La existencia y el estado de la estructura persistente se actualizaron con una inspección posterior en la sección 14; no debe interpretarse esta decisión como evidencia de que todos los directorios estén completos o listos para el despliegue.
@@ -398,7 +397,6 @@ Nota: la prueba de listado denegado valida que la ACL `--x` no haya otorgado lec
 - [ ] Verificar ACL, recorrido y ausencia de permiso de listado.
 - [ ] Registrar resultado real de ejecución en esta sección antes de preparar la siembra de `public` y `cache`.
 
-
 ## 19. Resultado de aplicación y validación de ACL en TEST (27-nov-2026)
 
 El administrador ejecutó el procedimiento autorizado en el host `pruebas` y compartió la salida de `getfacl` y de las pruebas de acceso. El resultado fue satisfactorio:
@@ -532,12 +530,53 @@ La decisión se basa en el comportamiento comprobado del código de OJS 3.5.0-6:
 
 La variable `OJS_SANDBOX` del ejemplo de entorno TEST debe cambiar a `Off` para reflejar esta decisión. La plantilla de PROD permanece independiente y no se modifica con esta decisión.
 
-**Estado:** decisión aprobada por el administrador; falta aplicar el cambio en el repositorio Gitea `encit/revista`, rama `feature/ojs-3.5-dockerfile`, y posteriormente implementar el generador de configuración. No se ha generado `config.inc.php`, no se ha iniciado Compose ni contenedores, no se ha probado worker/scheduler contra una base de datos y no se ha modificado PROD.
+**Estado actualizado:** el administrador confirmó que `OJS_SANDBOX=Off` ya está aplicado en `deploy/testing/.env.example` del checkout local de Gitea. La rama observada es `feature/ojs-3.5-dockerfile`, HEAD `c8ffebc`; Git reporta `?? deploy/`, por lo que los archivos de despliegue siguen sin seguimiento y no se ha confirmado commit ni push en Gitea. El cambio queda aplicado en el árbol de trabajo local, no publicado.
+
+No se ha generado `config.inc.php`, no se ha iniciado Compose ni contenedores, no se ha probado worker/scheduler contra una base de datos y no se ha modificado PROD.
 
 - [x] Aprobar `sandbox = Off` para TEST con el fin de validar worker y scheduler.
 - [x] Definir el worker dedicado como consumidor de la cola.
 - [x] Definir scheduler externo sin procesamiento de cola integrado.
 - [x] Establecer Mailpit como destino SMTP de TEST y excluir SMTP real.
-- [ ] Actualizar `deploy/testing/.env.example` en Gitea.
+- [x] Aplicar `OJS_SANDBOX=Off` en el ejemplo TEST del árbol de trabajo Gitea (pendiente de seguimiento/commit).
 - [ ] Generar y validar `config.inc.php` de TEST fuera de Git.
 - [ ] Ejecutar y validar worker/scheduler con configuración y base de datos funcionales.
+
+## 24. Inspección de secretos OJS y política del generador de configuración (27-nov-2026)
+
+Se inspeccionó el template oficial `config.TEMPLATE.inc.php` y el código fuente incluido en la imagen local `encit/revista:ojs-3.5.0-6-test`. La inspección fue estática y de sólo lectura.
+
+### Formato de los secretos
+
+- `[general] app_key`: `PKP\\core\\PKPAppKey::generate()` genera una clave con formato `base64:` seguido de Base64 de una clave criptográfica. El cifrado predeterminado es `aes-256-cbc`, que requiere 32 bytes. El generador externo podrá reproducir el algoritmo oficial mediante 32 bytes obtenidos con un CSPRNG y codificación Base64, conservando el prefijo `base64:`.
+- `[security] salt`: se utiliza como clave de `hash_hmac` para generar hashes de restablecimiento de contraseña. No se encontró una restricción de formato en el uso inspeccionado. Se propone un valor aleatorio independiente de 32 bytes representado como 64 caracteres hexadecimales.
+- `[security] api_key_secret`: se utiliza como secreto de JWT con algoritmo HS256 para firmar y validar tokens de API. Se propone un valor aleatorio independiente de 32 bytes representado como 64 caracteres hexadecimales.
+
+Los valores deberán generarse con un generador criptográficamente seguro, ser únicos por entorno, mantenerse persistentes y no imprimirse en consola ni incorporarse a Git. La longitud/formato propuestos para `salt` y `api_key_secret` son decisiones de implementación basadas en los usos inspeccionados; no se afirma que OJS exija exclusivamente esa representación.
+
+### Política de creación y protección
+
+El administrador aprobó que el generador se niegue a sobrescribir un `config.inc.php` existente. La implementación deberá fallar sin modificarlo, evitando reemplazar claves o configuración de una instalación ya inicializada. Se acordó además que el proceso:
+
+1. Lea la imagen desde la variable `IMAGE` del entorno, sin usar etiquetas placeholder.
+2. Obtenga el template oficial `/var/www/html/config.TEMPLATE.inc.php` de esa imagen.
+3. Modifique únicamente las directivas acordadas y preserve el resto del template, incluidos comentarios.
+4. Valide variables, rutas y precondiciones antes de escribir.
+5. Genere secretos independientes sin mostrarlos.
+6. Cree el archivo de forma exclusiva y atómica, usando un temporal en el mismo directorio y sin reemplazar un destino existente.
+
+### Estado y límites
+
+La rama Gitea observada es `feature/ojs-3.5-dockerfile`, HEAD local `c8ffebc` (`Build hardened OJS 3.5.0-6 Docker image`). El estado Git reportado es `?? deploy/`; `deploy/README.md` y los ejemplos de entorno están en un directorio todavía no seguido por Git. El directorio `deploy/scripts` existe y está vacío. El ejemplo TEST ya refleja `OJS_SANDBOX=Off` según la salida compartida por el administrador.
+
+La inspección confirmó que `app_key` está vacío en el template, `salt` conserva el marcador de ejemplo y `api_key_secret` está vacío. También confirmó que el template inicia con `installed = Off`, `sandbox = Off`, `job_runner = On` y `task_runner = On`; el generador deberá aplicar los valores acordados para TEST, incluidos los ejecutores integrados desactivados y `process_jobs_at_task_scheduler = Off`.
+
+**No se ha creado todavía `generate-config.sh`, no se ha generado `config.inc.php`, no se han iniciado servicios ni contenedores y no se ha modificado PROD.** La siguiente etapa es implementar y revisar el script en Gitea; después se documentarán sus pruebas de sintaxis y validación en esta rama del PR, sin afirmar ejecución hasta recibir sus resultados.
+
+- [x] Inspeccionar el generador oficial de `app_key` y confirmar el cifrado predeterminado.
+- [x] Identificar el uso de `salt` en HMAC para recuperación de contraseñas.
+- [x] Identificar el uso de `api_key_secret` para JWT HS256.
+- [x] Aprobar la política de no sobrescritura de `config.inc.php`.
+- [ ] Implementar `deploy/scripts/generate-config.sh` en Gitea.
+- [ ] Revisar sintaxis, guardas, preservación del template y escritura atómica.
+- [ ] Ejecutar el generador en TEST con autorización y validar el archivo sin revelar secretos.
