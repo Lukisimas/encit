@@ -399,3 +399,26 @@ Nota: la prueba de listado denegado valida que la ACL `--x` no haya otorgado lec
 - [ ] Aplicar ACL nominativas de sólo recorrido a UID 33 y 999.
 - [ ] Verificar ACL, recorrido y ausencia de permiso de listado.
 - [ ] Registrar resultado real de ejecución en esta sección antes de preparar la siembra de `public` y `cache`.
+
+
+## 19. Resultado de aplicación y validación de ACL en TEST (27-nov-2026)
+
+El administrador ejecutó el procedimiento autorizado en el host `pruebas` y compartió la salida de `getfacl` y de las pruebas de acceso. El resultado fue satisfactorio:
+
+- En `/srv/encit/data/revista` y `/srv/encit/data/revista/test` aparecen entradas nominativas `user:www-data:--x` (UID 33) y `user:999:--x` (UID 999).
+- La máscara ACL mostrada es `r-x`; no amplía los permisos efectivos de las entradas nominativas, que permanecen en `--x`.
+- La prueba de recorrido como UID 33 terminó en `OK`.
+- La prueba de recorrido como UID 999 terminó en `OK`.
+- La prueba de listado confirmó que UID 33 no puede listar `/srv/encit/data/revista` y que UID 999 no puede listar `/srv/encit/data/revista/test`.
+
+La salida confirma que ambos procesos pueden atravesar los directorios padre sin recibir permiso de lectura/listado mediante estas ACL. Los propietarios siguen siendo `root:root`; no se reportó cambio de propietarios ni de modos tradicionales. La salida compartida no incluyó el registro de `apt-get`, por lo que se documenta la disponibilidad funcional de `getfacl` y las ACL observadas, sin atribuir detalles adicionales al proceso de instalación del paquete.
+
+**Alcance:** esta validación se limita a las ACL y al recorrido de los dos directorios indicados. No valida todavía los permisos/contenidos de los bind mounts internos, el arranque de OJS/MariaDB ni el Compose completo. No se ha sembrado `public` ni `cache`, no se ha generado `config.inc.php`, no se ha iniciado el stack y no se ha modificado PROD.
+
+- [x] Observar ACL nominativas para UID 33 y UID 999 en ambos directorios padre.
+- [x] Validar recorrido de la ruta como UID 33.
+- [x] Validar recorrido de la ruta como UID 999.
+- [x] Confirmar denegación de listado en las rutas comprobadas.
+- [ ] Sembrar `public` y `cache` en TEST, con autorización explícita.
+- [ ] Generar `config.inc.php` de TEST fuera de Git.
+- [ ] Validar Compose con los valores de entorno previstos antes de iniciar servicios.
