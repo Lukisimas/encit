@@ -202,7 +202,7 @@ La consulta de sólo lectura en `pruebas` confirmó:
 
 **Decisión de persistencia TEST:** utilizar `/srv/encit/data/revista/test`, consistente con `repos/revista/deploy/testing/.env.example`. Los directorios de MariaDB, configuración, archivos privados, `public` y `cache` se alojarán bajo esa raíz en el único disco disponible. No se debe crear ni esperar un montaje adicional en `/data` para TEST.
 
-Esta decisión elimina el bloqueo documental relacionado con la ausencia de `/data`; no significa que la persistencia ya exista o esté inicializada. La inspección anterior encontró que `/srv/encit/data/revista/test` no existía. Por tanto, siguen pendientes la creación de la estructura, la asignación de propietarios/permisos verificados, la siembra de `public` y `cache`, y la generación segura de `config.inc.php`.
+Esta decisión elimina el bloqueo documental relacionado con la ausencia de `/data`. La existencia y el estado de la estructura persistente se actualizaron con una inspección posterior en la sección 14; no debe interpretarse esta decisión como evidencia de que todos los directorios estén completos o listos para el despliegue.
 
 La desconexión SSH durante la primera consulta no produjo cambios conocidos; la consulta posterior fue de sólo lectura. No se crearon directorios, no se modificaron propietarios/permisos, no se inició ningún contenedor y no se tocó PROD.
 
@@ -212,3 +212,38 @@ La desconexión SSH durante la primera consulta no produjo cambios conocidos; la
 - [ ] Crear la estructura persistente TEST con propietarios y permisos verificados.
 - [ ] Sembrar `public` y preparar `cache` desde la imagen OJS.
 - [ ] Generar `config.inc.php` de TEST sin guardar secretos en Git.
+
+
+## 14. Inspección de permisos y estructura persistente TEST (27-nov-2026)
+
+Se realizó una inspección de sólo lectura en `pruebas`. El filesystem sigue siendo el disco único `/dev/sda1` montado en `/`, con 901 GB totales, 14 GB usados y 842 GB disponibles en el momento de la consulta.
+
+La ruta existe, pero la sesión de `administrador` no puede recorrerla por los permisos del directorio padre:
+
+| Ruta | Propietario:grupo | Modo |
+|---|---|---:|
+| `/srv` | `root:root` | 755 |
+| `/srv/encit` | `root:root` | 755 |
+| `/srv/encit/data` | `root:root` | 755 |
+| `/srv/encit/data/revista` | `root:root` | 750 |
+| `/srv/encit/data/revista/test` | `root:root` | 750 |
+| `.../files` | `www-data:www-data` | 750 |
+| `.../public` | `www-data:www-data` | 750 |
+| `.../config` | `www-data:www-data` | 750 |
+| `.../mariadb` | UID 999, GID 999 (nombre de grupo local: `systemd-journal`) | 750 |
+
+La identidad local `administrador` es UID/GID `1000:1000` y pertenece a `sudo`, entre otros grupos; no pertenece a `root` ni a `www-data`. El modo `750` de `/srv/encit/data/revista` impide que el usuario sin privilegios recorra el directorio. No se instaló `getfacl` ni `setfacl`; por tanto, esta inspección no evaluó ACL extendidas.
+
+La imagen OJS utiliza `www-data` UID/GID `33:33`; MariaDB utiliza `mysql` UID/GID `999:999`. En el host, el GID numérico 999 se resuelve al nombre local `systemd-journal`; la identidad efectiva dentro del contenedor se determina por el número UID/GID, no por el nombre mostrado por NSS en el host. No cambiar propietario/grupo de `mariadb` sin una comprobación adicional y una decisión explícita.
+
+La estructura observada contiene `files`, `public`, `config` y `mariadb`; no se observó `cache` en el listado de primer nivel. El comando de inspección no confirmó la existencia de `config.inc.php` dentro de `config`, ni la inicialización de MariaDB. Es necesario verificar contenidos, modos y propietarios numéricos de cada ruta antes de decidir cualquier corrección.
+
+**Estado operativo:** la estructura base existe parcialmente, pero no se considera lista para desplegar. No se modificaron permisos, propietarios, ACL ni contenidos; no se instalaron paquetes, no se inició ningún contenedor OJS/MariaDB y no se tocó PROD.
+
+- [x] Confirmar identidad UID/GID de `www-data` (33:33) y `mysql` (999:999) en sus imágenes.
+- [x] Identificar el bloqueo de recorrido en `/srv/encit/data/revista` (modo 750, root:root).
+- [x] Identificar las carpetas persistentes existentes en TEST.
+- [ ] Verificar contenido, propietarios numéricos y permisos de cada subdirectorio.
+- [ ] Determinar el acceso administrativo mínimo sin abrir innecesariamente la ruta.
+- [ ] Confirmar si existe `config.inc.php` y si MariaDB contiene datos antes de cualquier inicialización.
+- [ ] Preparar cualquier cambio de permisos/propiedad para autorización explícita.
