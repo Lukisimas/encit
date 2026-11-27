@@ -702,3 +702,31 @@ Hallazgos del contenido:
 - El README del paquete indica PHP 8.2+ y lista requisitos Composer/platform como bcmath, curl, dom, fileinfo, ftp, gd, intl, openssl, simplexml, xml, xmlwriter y zip; mbstring aparece cubierto por polyfill en la salida de Composer incluida en README. Verificar el runtime real con `php -m` y Composer antes de construir la imagen definitiva.
 
 Implicaciones para volúmenes: los bind mounts vacíos sobre `cache` y `public` ocultan el contenido incluido en la imagen. Inicializar los subdirectorios cache y el archivo vacío `public/index.html` en el volumen persistente antes de montar, o diseñar una inicialización controlada que los siembre. No copiar el `config.inc.php` incluido sin revisar sus valores y secretos de ejemplo. No se extrajo el paquete en rutas persistentes ni se cambiaron permisos.
+ 
+
+### Verificación de extensiones PHP en imagen base (27-nov-2026)
+
+Se ejecutó una comprobación aislada con `php:8.3-apache-bookworm`, PHP 8.3.37. Resultado de la lista de extensiones comprobada contra el paquete OJS 3.5.0-6:
+
+| Extensión | Resultado |
+|---|---|
+| bcmath | Falta |
+| curl | OK |
+| dom | OK |
+| fileinfo | OK |
+| ftp | Falta |
+| gd | Falta |
+| intl | Falta |
+| openssl | OK |
+| simplexml | OK |
+| xml | OK |
+| xmlwriter | OK |
+| zip | Falta |
+| pdo_mysql | Falta |
+| mysqli | Falta |
+
+También se observó que `mbstring`, `zlib`, `PDO` y `mysqlnd` están presentes; `pdo_sqlite` está presente, pero no sustituye a `pdo_mysql`. La imagen base no se considera todavía apta para OJS.
+
+**Decisión:** construir una imagen propia y reproducible desde un Dockerfile versionado, instalando las extensiones requeridas y verificándolas en build/CI. No instalar extensiones manualmente en contenedores en ejecución. Antes de fijar el Dockerfile, confirmar los paquetes del sistema necesarios para compilar GD, Intl, ZIP y las extensiones PDO/MySQL en Debian Bookworm, y ejecutar `composer check-platform-reqs` contra el paquete exacto de OJS.
+
+La prueba fue de solo lectura y utilizó contenedores efímeros: no creó volúmenes, no publicó puertos y no modificó TEST ni PROD.
