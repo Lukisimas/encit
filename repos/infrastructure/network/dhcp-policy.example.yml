@@ -29,4 +29,4 @@ dhcp:
       pool_end: "<FIN_POOL>"
 
 # La VLAN de servidores debe preferir direcciones estáticas/reservas controladas,
-# no un pool dinámico general para 10.10.10.20/10.10.10.30.
+# no un pool dinámico general para 10.129.100.2/10.129.101.2.

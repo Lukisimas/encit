@@ -4,16 +4,17 @@ Plataforma común para todos los sistemas.
 
 ## Servidores
 
-- `10.10.10.20`: Gitea, Jenkins, Registry, Mailpit, reverse proxy DEV/TEST y aplicaciones DEV/TEST.
-- `10.10.10.30`: reverse proxy y aplicaciones productivas.
+- `10.129.100.2` (VLAN 50): Gitea, Jenkins, Registry, Mailpit, reverse proxy DEV/TEST y
+  aplicaciones DEV/TEST.
+- `10.129.101.2` (VLAN 51): reverse proxy y aplicaciones productivas.
 
 ## Red
 
-DNS, DHCP, gateways, VLAN y routing **no** viven en estos servidores. Se administran mediante el
-equipo perimetral y el switch de capa 3.
+DNS interno, gateways, NAT y WireGuard se administran mediante OPNsense. La conectividad de
+VLAN y el routing inter-VLAN siguen la configuración aprobada del switch capa 3.
 
-La carpeta `network/` contiene la intención de configuración vendor-neutral que debe mapearse a la
-marca/modelo real.
+La carpeta `network/` contiene la intención de configuración vendor-neutral que debe mapearse a
+la configuración real de los equipos.
 
 Copiar:
 

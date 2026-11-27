@@ -1,8 +1,8 @@
 # Plantilla vendor-neutral. NO contiene configuración específica de fabricante.
 network:
-  control_server: "10.10.10.20"
-  production_server: "10.10.10.30"
-  current_example_gateway: "10.10.10.40"
+  control_server: "10.129.100.2"
+  production_server: "10.129.101.2"
+  current_example_gateway: "<GATEWAY_ACTUAL_PENDIENTE_VALIDAR>"
 
   # Completar cuando se instale el nuevo equipo.
   perimeter_management_ip: "<IP_EQUIPO_PERIMETRAL>"

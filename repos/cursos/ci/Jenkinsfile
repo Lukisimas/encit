@@ -15,13 +15,13 @@ pipeline {
       }}
     }
     stage('DEV'){when{branch 'develop'}steps{sshagent(credentials:['control-deploy-ssh']){
-      sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/cursos/dev &&
+      sh '''ssh deploy@10.129.100.2 "cd /srv/encit/apps/cursos/dev &&
         sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env &&
         docker compose pull && docker compose up -d --remove-orphans"'''
     }}}
     stage('TEST'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
       sshagent(credentials:['control-deploy-ssh']){
-        sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/cursos/test &&
+        sh '''ssh deploy@10.129.100.2 "cd /srv/encit/apps/cursos/test &&
           sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${GIT_COMMIT}/' .env &&
           docker compose pull && docker compose up -d --remove-orphans"'''
       }
@@ -41,7 +41,7 @@ pipeline {
       sh '''test -n "$TESTED_TAG"; case "$TESTED_TAG" in tested-*) ;; *) exit 2;; esac'''
       input message:'¿Desplegar exactamente la imagen TESTED en cursos.encit.unam.mx?'
       sshagent(credentials:['production-deploy-ssh']){
-        sh '''ssh deploy@10.10.10.30 "cd /srv/encit/apps/cursos/prod &&
+        sh '''ssh deploy@10.129.101.2 "cd /srv/encit/apps/cursos/prod &&
           sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env &&
           docker compose pull && docker compose up -d --remove-orphans"'''
       }

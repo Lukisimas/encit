@@ -18,13 +18,13 @@ pipeline {
       }
     }}
     stage('DEV'){when{branch 'develop'}steps{sshagent(credentials:['control-deploy-ssh']){
-      sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/moodle/dev &&
+      sh '''ssh deploy@10.129.100.2 "cd /srv/encit/apps/moodle/dev &&
         sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${MOODLE_VERSION}-${GIT_COMMIT}/' .env &&
         docker compose pull && docker compose up -d --remove-orphans"'''
     }}}
     stage('TEST'){when{expression{env.BRANCH_NAME==~ /^release\/.*/}}steps{
       sshagent(credentials:['control-deploy-ssh']){
-        sh '''ssh deploy@10.10.10.20 "cd /srv/encit/apps/moodle/test &&
+        sh '''ssh deploy@10.129.100.2 "cd /srv/encit/apps/moodle/test &&
           sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${MOODLE_VERSION}-${GIT_COMMIT}/' .env &&
           docker compose pull && docker compose up -d --remove-orphans"'''
       }
@@ -45,10 +45,10 @@ pipeline {
       input message:'¿Respaldar y desplegar exactamente Moodle TESTED?'
       sshagent(credentials:['production-deploy-ssh']){
         sh '''
-          ssh deploy@10.10.10.30 "
+          ssh deploy@10.129.101.2 "
             set -e; cd /srv/encit/apps/moodle/prod
             set -a; . ./.env; set +a
-            export BACKUP_DIR=/srv/encit/backups/moodle/prod
+            export BACKUP_DIR=/data/encit/backups/moodle/prod
             ./scripts/backup.sh
             sed -i 's/^IMAGE_TAG=.*/IMAGE_TAG=${TESTED_TAG}/' .env
             docker compose pull && docker compose up -d --remove-orphans
